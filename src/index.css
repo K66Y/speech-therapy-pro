@@ -1,0 +1,197 @@
+@import "tailwindcss";
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    direction: rtl;
+    font-family: 'Cairo', system-ui, -apple-system, sans-serif;
+  }
+
+  input:not([type="email"]):not([type="password"]),
+  textarea,
+  select {
+    direction: rtl;
+    text-align: right;
+  }
+
+  table {
+    direction: rtl;
+  }
+
+  th,
+  td {
+    direction: rtl;
+    text-align: right;
+  }
+
+  textarea {
+    resize: none;
+  }
+
+  input[type="number"] {
+    direction: ltr;
+    unicode-bidi: isolate;
+    font-family: Arial, system-ui, sans-serif;
+    font-variant-numeric: lining-nums;
+  }
+}
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 15mm 12mm 15mm 12mm;
+  }
+
+  body {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    font-size: 11pt;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .printable-sheet,
+  .printable-document,
+  .print-container,
+  table,
+  thead,
+  tbody,
+  tr,
+  th,
+  td,
+  input,
+  textarea {
+    direction: rtl !important;
+    text-align: right !important;
+  }
+
+  .official-kliche-container .text-left {
+    text-align: left !important;
+  }
+
+  .official-kliche-container [dir="ltr"] {
+    direction: ltr !important;
+    text-align: left !important;
+    unicode-bidi: isolate !important;
+  }
+
+  .official-kliche-container [dir="ltr"] span {
+    direction: ltr !important;
+    unicode-bidi: isolate !important;
+  }
+
+  .official-kliche-container > .grid > :first-child {
+    grid-column: 3 !important;
+    text-align: right !important;
+    direction: rtl !important;
+  }
+
+  .official-kliche-container > .grid > :nth-child(2) {
+    grid-column: 2 !important;
+  }
+
+  .official-kliche-container > .grid > :nth-child(3) {
+    grid-column: 1 !important;
+  }
+
+  .official-kliche-container .grid {
+    grid-template-columns: 1fr 0.8fr 1fr !important;
+  }
+
+  .printable-sheet {
+    width: 100% !important;
+    max-width: 190mm !important;
+    min-height: 0 !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+
+  /* Hide UI elements during print */
+  header,
+  nav,
+  footer,
+  button,
+  input[type="text"],
+  select,
+  textarea {
+    box-shadow: none !important;
+  }
+
+  .printable-sheet input:not([type="hidden"]),
+  .printable-sheet select {
+    border: 0 !important;
+    outline: 0 !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    color: #0f172a !important;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  .print\:hidden {
+    display: none !important;
+  }
+
+  .page-break-after {
+    page-break-after: always;
+    break-after: page;
+  }
+
+  .page-break-before {
+    page-break-before: always;
+    break-before: page;
+  }
+
+  .official-kliche-container {
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin-bottom: 20px !important;
+  }
+
+  body.official-printing {
+    min-height: 0 !important;
+    background: #fff !important;
+  }
+
+  body.official-printing > * {
+    visibility: hidden !important;
+  }
+
+  body.official-printing [data-official-print-target],
+  body.official-printing [data-official-print-target] * {
+    visibility: visible !important;
+  }
+
+  body.official-printing [data-official-print-target] {
+    position: absolute !important;
+    inset: 0 auto auto 0 !important;
+    width: 100% !important;
+    max-width: 190mm !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: #fff !important;
+  }
+
+  .official-kliche-container [dir="ltr"] {
+    direction: ltr !important;
+    text-align: left !important;
+    unicode-bidi: isolate !important;
+  }
+
+  .official-kliche-container .grid {
+    grid-template-columns: 1fr 0.8fr 1fr !important;
+  }
+
+  .official-kliche-container > .grid > :first-child { grid-column: 3 !important; }
+  .official-kliche-container > .grid > :nth-child(2) { grid-column: 2 !important; }
+  .official-kliche-container > .grid > :nth-child(3) { grid-column: 1 !important; }
+}
