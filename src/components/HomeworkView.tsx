@@ -1,3 +1,4 @@
+import { homeworkColumns, homeworkPositions } from '../services/homeworkGrid';
 import React, { useEffect, useState } from 'react';
 import {
   FileDown,
@@ -133,6 +134,10 @@ export const HomeworkView: React.FC<HomeworkViewProps> = ({
           grade={`${student.grade} - ${student.classRoom}`}
         />
 
+        <div className="flex gap-4 mb-4">
+          <div>تاريخ تسليم الواجب<EditableText label="تاريخ تسليم الواجب" multiline={false} value={activeHw.dateGiven} onSave={dateGiven => updateHomework({ dateGiven })} /></div>
+          <div>تاريخ إعادة الواجب<EditableText label="تاريخ إعادة الواجب" multiline={false} value={activeHw.returnDate} onSave={returnDate => updateHomework({ returnDate })} /></div>
+        </div>
         {/* Instructions for parents */}
         <div className="bg-emerald-50/70 border border-emerald-200 rounded-2xl p-5 mb-6 space-y-3">
           <div className="flex items-center gap-2">
@@ -163,36 +168,25 @@ export const HomeworkView: React.FC<HomeworkViewProps> = ({
 
           <div className="overflow-x-auto">
             <table className="w-full text-right border-collapse text-xs border border-slate-200 rounded-xl overflow-hidden">
-              <thead>
-                <tr className="bg-emerald-900 text-white text-center">
-                  <th className="p-3 border border-emerald-800">موضع الحرف</th>
-                  <th className="p-3 border border-emerald-800">الكلمة المطلوب نطقها</th>
-                  <th className="p-3 border border-emerald-800">التكرار اليومي</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-200">
-                {activeHw.wordsToPractice.map((w, idx) => (
-                  <tr key={idx} className="hover:bg-slate-50 text-center">
-                    <td className="p-3 font-bold text-slate-700 border border-slate-200 bg-slate-50">
-                      <SavedSelect aria-label="موضع الحرف" value={w.position} onChange={e => updateHomework({ wordsToPractice: activeHw.wordsToPractice.map((item, i) => i === idx ? { ...item, position: e.target.value as typeof item.position } : item) })}>{['أول الكلمة','وسط الكلمة','آخر الكلمة'].map(position => <option key={position}>{position}</option>)}</SavedSelect>
-                    </td>
-                    <td className="p-3 font-black text-emerald-900 text-lg border border-slate-200">
-                      <EditableText suggestions={ARABIC_LETTERS_MAP[activeHw.targetLetter].examples[w.position === 'أول الكلمة' ? 'beginning' : w.position === 'وسط الكلمة' ? 'middle' : 'end'].words.map(item => item.word).filter(Boolean)} label="كلمة الواجب" value={w.word} onSave={word => updateHomework({ wordsToPractice: activeHw.wordsToPractice.map((item, i) => i === idx ? { ...item, word } : item) })} onDelete={() => updateHomework({ wordsToPractice: activeHw.wordsToPractice.filter((_, i) => i !== idx) })} />
-                    </td>
-                    <td className="p-3 border border-slate-200">
-                      <SavedField aria-label="عدد التكرار" type="number" min={1} max={20} value={w.repetitionCount} onChange={e => updateHomework({ wordsToPractice: activeHw.wordsToPractice.map((item, i) => i === idx ? { ...item, repetitionCount: Number(e.target.value) } : item) })} />
-                      <div className="flex flex-wrap items-center justify-center gap-1.5">
-                        {Array.from({ length: Math.min(20, Math.max(0, w.repetitionCount)) }, (_, i) => i + 1).map(star => (
-                          <div
-                            key={star}
-                            className="w-6 h-6 rounded-full border border-amber-300 bg-amber-50 flex items-center justify-center text-amber-500 font-bold text-xs"
-                          >
-                            ★
-                          </div>
-                        ))}
+              <thead><tr className="bg-emerald-900 text-white">{homeworkPositions.map(position => <th key={position} className="p-3 border">{position}</th>)}</tr></thead>
+              <tbody>
+                {Array.from({ length: Math.max(...homeworkColumns(activeHw).map(column => column.length)) }, (_, row) => (
+                  <tr key={row}>{homeworkColumns(activeHw).map((column, col) => {
+                    const word = column[row];
+                    if (!word) return <td key={col} className="border" />;
+                    const changeWord = (changes: Partial<typeof word>) => {
+                      const columns = homeworkColumns(activeHw);
+                      columns[col][row] = { ...word, ...changes };
+                      updateHomework({ wordsToPractice: columns.flat() });
+                    };
+                    return <td key={col} className="border border-slate-200 p-3 w-1/3 text-center">
+                      <EditableText label="كلمة الواجب" value={word.word} suggestions={ARABIC_LETTERS_MAP[activeHw.targetLetter].examples[col === 0 ? 'beginning' : col === 1 ? 'middle' : 'end'].words.map(item => item.word)} onSave={value => changeWord({ word: value })} onDelete={() => changeWord({ word: '' })} />
+                      <div className="print:hidden"><SavedField aria-label="عدد التكرار" type="number" min={1} max={20} value={word.repetitionCount} onChange={e => changeWord({ repetitionCount: Number(e.target.value) })} /></div>
+                      <div className="flex flex-wrap justify-center gap-2 mt-2" aria-label="خانات وضع علامة صح بعد التكرار">
+                        {Array.from({ length: Math.min(20, Math.max(1, word.repetitionCount)) }, (_, i) => <span key={i} className="inline-block w-5 h-5 border border-slate-500 rounded-sm bg-white" />)}
                       </div>
-                    </td>
-                  </tr>
+                    </td>;
+                  })}</tr>
                 ))}
               </tbody>
             </table>

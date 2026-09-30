@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { SCHOOL_KLICHE } from '../data/sampleData';
-import { getLiveHijriDate, getLiveGregorianDate } from '../services/dateService';
+import { getDocumentHijriDate, getDocumentGregorianDate, setDocumentHijriDate } from '../services/dateService';
 
 interface OfficialHeaderProps {
   documentTitle: string;
@@ -14,8 +14,11 @@ interface OfficialHeaderProps {
 export const OfficialHeader: React.FC<OfficialHeaderProps> = ({
   documentTitle, subTitle, studentName, nationalId, grade, showStudentBar = true
 }) => {
-  const currentDateHijri = getLiveHijriDate();
-  const currentDateGregorian = getLiveGregorianDate();
+  const [editingDate, setEditingDate] = useState(false);
+  const [draftDate, setDraftDate] = useState('');
+  const [dateError, setDateError] = useState('');
+  const currentDateHijri = getDocumentHijriDate();
+  const currentDateGregorian = getDocumentGregorianDate();
 
   return (
     <div className="official-kliche-container bg-white border border-sky-900/20 rounded-2xl p-4 shadow-xs mb-6 print:border-none print:shadow-none print:p-0 print:mb-5">
@@ -36,6 +39,17 @@ export const OfficialHeader: React.FC<OfficialHeaderProps> = ({
             <span className="text-slate-500">التاريخ:</span>
             <bdi className="font-black text-sky-950" dir="ltr">{currentDateHijri}</bdi>
             <bdi className="font-semibold text-slate-700" dir="ltr">{currentDateGregorian}</bdi>
+            <div className="print:hidden" dir="rtl">
+              <button type="button" className="text-sky-800 mt-2" onClick={() => { setDraftDate(currentDateHijri.replace(/[\u2066-\u2069]/g, '').replace(/\s*هـ$/, '')); setEditingDate(true); }}>✎ تعديل تاريخ النموذج</button>
+              {editingDate && <div className="bg-white border rounded-lg p-2 space-y-2">
+                <label>التاريخ الهجري (يوم/شهر/سنة)<input aria-label="تاريخ النموذج الهجري" dir="ltr" className="w-full border rounded p-2" value={draftDate} onChange={e => setDraftDate(e.target.value)} /></label>
+                <p>يسري على طباعة وتصدير النماذج في هذه الجلسة، ولا يغيّر تواريخ السجلات المحفوظة.</p>
+                {dateError && <p role="alert">{dateError}</p>}
+                <button type="button" className="bg-emerald-700 text-white rounded p-2" onClick={() => { if (setDocumentHijriDate(draftDate)) { setEditingDate(false); setDateError(''); } else setDateError('اكتب تاريخاً هجرياً صحيحاً مثل 19/04/1448'); }}>حفظ</button>
+                <button type="button" className="p-2" onClick={() => setEditingDate(false)}>إلغاء</button>
+                <button type="button" onClick={() => { setDocumentHijriDate(''); setEditingDate(false); }}>العودة لتاريخ اليوم</button>
+              </div>}
+            </div>
           </div>
         </div>
       </div>

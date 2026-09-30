@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Check, Pencil, RotateCcw, Trash2 } from 'lucide-react';
 import { displayBodyText } from '../services/displayText';
 import { fieldChoices } from '../data/fieldChoices';
+import { formatHijriDate } from '../services/dateService';
 
 interface EditableTextProps {
   label: string;
@@ -20,7 +21,8 @@ interface EditableTextProps {
 export const EditableText: React.FC<EditableTextProps> = ({
   label, value, onSave, multiline = true, rows = 3, onDelete = () => onSave(''), className = '', suggestions, validate, targetLetter
 }) => {
-  value = displayBodyText(value);
+  const isDate = /تاريخ/.test(label);
+  value = isDate ? formatHijriDate(value) : displayBodyText(value);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value);
   const [saved, setSaved] = useState(false);
@@ -35,10 +37,11 @@ export const EditableText: React.FC<EditableTextProps> = ({
   }, [value, editing]);
 
   const save = () => {
-    const problem = validate?.(draft.trim());
+    const normalized = isDate ? formatHijriDate(draft.trim()) : draft.trim();
+    const problem = validate?.(normalized) || (isDate && normalized && !normalized.startsWith('\u2066') ? 'اكتب التاريخ الهجري بصيغة يوم/شهر/سنة، مثل 19/04/1448' : undefined);
     if (problem) { setError(problem); return; }
     setError('');
-    onSave(draft.trim());
+    onSave(normalized);
     setEditing(false);
     setSaved(true);
     window.setTimeout(() => setSaved(false), 1800);

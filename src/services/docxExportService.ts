@@ -1,3 +1,4 @@
+import { homeworkColumns, homeworkPositions } from './homeworkGrid';
 import {
   Document,
   Packer,
@@ -27,7 +28,7 @@ import {
 } from '../types/speechTherapy';
 import { ARABIC_LETTERS_LIST, ARABIC_LETTERS_MAP } from '../data/arabicLettersData';
 import { SCHOOL_KLICHE } from '../data/sampleData';
-import { getLiveHijriDate, getLiveGregorianDate } from './dateService';
+import { getDocumentHijriDate, getDocumentGregorianDate } from './dateService';
 import { displayText } from './displayText';
 
 class TextRun extends DocxTextRun {
@@ -69,8 +70,8 @@ function loadMinistryLogo(): Promise<Uint8Array> {
 }
 
 async function createOfficialHeaderParagraphs(docTitle: string, studentName?: string): Promise<(Paragraph | Table)[]> {
-  const hijriDate = getLiveHijriDate();
-  const gregorianDate = getLiveGregorianDate();
+  const hijriDate = getDocumentHijriDate();
+  const gregorianDate = getDocumentGregorianDate();
   const logoData = await loadMinistryLogo();
   const noBorder = { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' };
 
@@ -879,25 +880,14 @@ export async function exportHomeworkDocx(student: StudentProfile, homework: Home
             ]
           }),
           createRtlTable([
-            new TableRow({
-              children: [
-                createStyledCell('موضع الحرف', 30, true),
-                createStyledCell('الكلمة للتدريب والنطق', 40, true),
-                createStyledCell('عدد التكرارات اليومية', 30, true)
-              ]
-            }),
-            ...homework.wordsToPractice.map(
-              w =>
-                new TableRow({
-                  children: [
-                    createStyledCell(w.position, 30),
-                    createStyledCell(w.word, 40, false, true, PRIMARY_COLOR),
-                    createStyledCell(`${w.repetitionCount} مرات يومياً`, 30)
-                  ]
-                })
+            new TableRow({ children: homeworkPositions.map(position => createStyledCell(position, 33, true)) }),
+            ...Array.from({ length: Math.max(...homeworkColumns(homework).map(column => column.length)) }, (_, row) =>
+              new TableRow({ children: homeworkColumns(homework).map(column => {
+                const word = column[row];
+                return createStyledCell(word ? word.word + '\n' + '□ '.repeat(Math.min(20, Math.max(1, word.repetitionCount))) : '', 33);
+              }) })
             )
           ]),
-
           new Paragraph({
             alignment: AlignmentType.RIGHT,
             bidirectional: true,

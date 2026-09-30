@@ -1,5 +1,6 @@
 import { SavedSelect } from './SavedSelect';
 import { SavedField } from './SavedField';
+import { EditableText } from './EditableText';
 import React, { useEffect, useState } from 'react';
 import {
   FileDown,
@@ -148,7 +149,8 @@ export const LongTermPlanView: React.FC<LongTermPlanViewProps> = ({
                     </div>
 
                     <div className="flex items-center gap-2 text-xs">
-                      <SavedSelect aria-label="حالة الهدف طويل المدى" value={g.status || (g.progressPercentage > 0 ? 'in_progress' : 'pending')} onChange={e => updateGoal(g.id, { status: e.target.value as 'pending' | 'in_progress' | 'achieved' })}><option value="pending">لم يبدأ</option><option value="in_progress">تحت التدريب</option><option value="achieved">منجز</option></SavedSelect>
+                      <span className="hidden print:block">{g.status === 'achieved' ? 'منجز' : g.status === 'in_progress' ? 'تحت التدريب' : 'لم يسجل الإنجاز'}</span>
+                      <button type="button" className={`rounded-lg px-3 py-2 text-xs font-bold ${g.status === 'achieved' ? 'bg-emerald-600 text-white' : g.status === 'in_progress' ? 'bg-amber-500 text-slate-900' : 'bg-slate-200 text-slate-600'}`} onClick={() => updateGoal(g.id, { status: g.status === 'achieved' ? 'in_progress' : g.status === 'in_progress' ? 'pending' : 'achieved' })}>{g.status === 'achieved' ? 'منجز' : g.status === 'in_progress' ? 'تحت التدريب' : 'تسجيل المنجز'}</button>
                       <span className="text-slate-500">نسبة الإنجاز الحالية:</span>
                       <div className="w-28 bg-slate-100 rounded-full h-3 overflow-hidden border border-slate-200">
                         <div
@@ -248,7 +250,7 @@ export const LongTermPlanView: React.FC<LongTermPlanViewProps> = ({
                   className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs text-slate-800 flex items-center gap-2.5"
                 >
                   <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>{strat}</span>
+                  <EditableText label="الاستراتيجيات" value={strat} onSave={value => { const updated = { ...data, generalStrategies: data.generalStrategies.map((item, index) => index === i ? value : item) }; setData(updated); onUpdatePlan(updated); }} onDelete={() => { const updated = { ...data, generalStrategies: data.generalStrategies.filter((_, index) => index !== i) }; setData(updated); onUpdatePlan(updated); }} className="flex-1" />
                 </div>
               ))}
             </div>

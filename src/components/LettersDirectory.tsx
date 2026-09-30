@@ -33,7 +33,9 @@ export const LettersDirectory: React.FC = () => {
     try { const uid = auth?.currentUser?.uid; const saved = uid ? localStorage.getItem(`st_custom_letters_map_${uid}`) : null; return saved ? { ...ARABIC_LETTERS_MAP, ...JSON.parse(saved) } : ARABIC_LETTERS_MAP; } catch { return ARABIC_LETTERS_MAP; }
   });
 
-  const [selectedLetterKey, setSelectedLetterKey] = useState<ArabicLetterKey>('ر');
+  const [selectedLetterKey, setSelectedLetterKey] = useState<ArabicLetterKey>(() => { try { const saved = localStorage.getItem(`st_last_letter_${auth?.currentUser?.uid}`); return ARABIC_LETTERS_LIST.includes(saved as ArabicLetterKey) ? saved as ArabicLetterKey : 'ر'; } catch { return 'ر'; } });
+  const [lastVisitedLetter] = useState(selectedLetterKey);
+  useEffect(() => { const uid = auth?.currentUser?.uid; if (uid) { try { localStorage.setItem(`st_last_letter_${uid}`, selectedLetterKey); } catch { /* Reading and training remain available if local storage is blocked. */ } } }, [selectedLetterKey]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<string>('all');
   const [isExporting, setIsExporting] = useState(false);
@@ -173,6 +175,7 @@ export const LettersDirectory: React.FC = () => {
   return (
     <div className="space-y-6">
       <p role="status" className="text-xs text-slate-600 print:hidden">{saveStatus}</p>
+      <button type="button" className="rounded-full bg-teal-50 px-3 py-1 text-xs text-teal-800 print:hidden" onClick={() => setSelectedLetterKey(lastVisitedLetter)}>نكمّل من هنا · آخر حرف: {lastVisitedLetter}</button>
       {saveFailed && <button type="button" className="rounded-lg bg-sky-800 px-4 py-2 text-white print:hidden" onClick={() => setRetrySave(value => value + 1)}>إعادة محاولة الحفظ</button>}
       {/* Top Banner & Actions - Harmonized Soft Blue Gradient */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-gradient-to-l from-sky-950 via-sky-900 to-slate-900 text-white p-4 rounded-2xl shadow-md border border-sky-800/40">

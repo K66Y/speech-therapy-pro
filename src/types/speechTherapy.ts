@@ -46,6 +46,7 @@ export interface LetterInfo {
 }
 
 export interface StudentProfile {
+  deletedAt?: string | null;
   id: string;
   fullName: string;
   nationalId: string;
@@ -143,6 +144,7 @@ export interface DiagnosticAssessment {
   speechIntelligibilityScore: number; // percentage 0-100%
   primaryErrors: string[];
   summaryConclusion: string;
+  summaryNeedsReview?: boolean;
 }
 
 export interface LongTermPlanGoal {

@@ -9,6 +9,17 @@ export interface DynamicDateInfo {
   combined: string;
 }
 
+let documentDate = '';
+export function setDocumentHijriDate(value: string): boolean {
+  if (!value.trim()) { documentDate = ''; return true; }
+  const formatted = formatHijriDate(value);
+  if (!formatted.startsWith('\u2066')) return false;
+  documentDate = formatted;
+  return true;
+}
+export function getDocumentHijriDate(): string { return documentDate || getLiveHijriDate(); }
+export function getDocumentGregorianDate(): string { return documentDate ? '' : getLiveGregorianDate(); }
+
 /** Keep stored Arabic/Persian numerals readable with the application's 123 convention. */
 export function normalizeDigits(value: string | number): string {
   return String(value).replace(/[٠-٩۰-۹]/g, digit => String(digit.charCodeAt(0) - (digit <= '٩' ? 0x660 : 0x6f0)));

@@ -69,11 +69,8 @@ export const ShortTermPlanView: React.FC<ShortTermPlanViewProps> = ({
   const toggleObjectiveStatus = (objId: string) => {
     const objective = data.objectives.find(item => item.id === objId);
     if (!objective) return;
-    const nextStatus = objective.status === 'achieved' ? 'in_progress' : 'achieved';
-    const nextPercentage = nextStatus === 'achieved'
-      ? Math.max(objective.successTargetPercentage, objective.currentPercentage)
-      : Math.min(objective.currentPercentage, Math.max(0, objective.successTargetPercentage - 1));
-    updateObjective(objId, { status: nextStatus, currentPercentage: nextPercentage });
+    const nextStatus = objective.status === 'achieved' ? 'in_progress' : objective.status === 'in_progress' ? 'pending' : 'achieved';
+    updateObjective(objId, { status: nextStatus });
   };
 
   const deleteObjective = (objId: string) => {
@@ -217,7 +214,7 @@ export const ShortTermPlanView: React.FC<ShortTermPlanViewProps> = ({
                           <SavedField aria-label="نسبة الإنجاز" type="number" min="0" max="100" value={obj.currentPercentage} onChange={e => updateObjective(obj.id, { currentPercentage: Math.min(100, Math.max(0, Number(e.target.value) || 0)), status: Number(e.target.value) >= obj.successTargetPercentage ? 'achieved' : Number(e.target.value) > 0 ? 'in_progress' : 'pending' })} className="w-14 rounded border border-slate-200 bg-white px-1 py-0.5 text-center font-black text-emerald-800 print:border-0" />%
                         </div>
 
-                      <SavedSelect aria-label="حالة الهدف قصير المدى" value={obj.status} onChange={e => updateObjective(obj.id, { status: e.target.value as 'pending' | 'in_progress' | 'achieved' })}><option value="pending">لم يبدأ</option><option value="in_progress">تحت التدريب</option><option value="achieved">منجز</option></SavedSelect>
+                      <span className="hidden print:block">{isAchieved ? 'منجز' : isInProgress ? 'تحت التدريب' : 'لم يسجل الإنجاز'}</span>
                       <button
                           onClick={() => toggleObjectiveStatus(obj.id)}
                           className={`text-xs px-2.5 py-1 rounded-md font-bold flex items-center gap-1 transition-all cursor-pointer ${
@@ -231,10 +228,10 @@ export const ShortTermPlanView: React.FC<ShortTermPlanViewProps> = ({
                           {isAchieved ? (
                             <>
                               <Check className="w-3.5 h-3.5" />
-                              إلغاء الإنجاز
+                              منجز
                             </>
                           ) : (
-                            <><Check className="w-3.5 h-3.5" />تسجيل الإنجاز</>
+                            <><Check className="w-3.5 h-3.5" />{isInProgress ? 'تحت التدريب' : 'تسجيل المنجز'}</>
                           )}
                         </button>
                       </div>

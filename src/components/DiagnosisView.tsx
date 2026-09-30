@@ -1,4 +1,5 @@
 import { SavedField } from './SavedField';
+import { consistentDiagnosisNote } from '../services/diagnosisNotes';
 import { SavedSelect } from './SavedSelect';
 import React, { useEffect, useState } from 'react';
 import {
@@ -86,6 +87,7 @@ export const DiagnosisView: React.FC<DiagnosisViewProps> = ({
   ) => {
     const updated = {
       ...data,
+      summaryNeedsReview: true,
       speechIntelligibilityScore: isManualScoreMode ? data.speechIntelligibilityScore : autoScore,
       lettersResults: {
         ...data.lettersResults,
@@ -93,7 +95,8 @@ export const DiagnosisView: React.FC<DiagnosisViewProps> = ({
           ...data.lettersResults[letter],
           [pos]: {
             ...data.lettersResults[letter]?.[pos],
-            production: val
+            production: val,
+            notes: consistentDiagnosisNote(val, data.lettersResults[letter]?.[pos]?.notes)
           }
         }
       }
@@ -151,6 +154,7 @@ export const DiagnosisView: React.FC<DiagnosisViewProps> = ({
     const current = data.lettersResults[letter];
     const updated = {
       ...data,
+      summaryNeedsReview: true,
       lettersResults: {
         ...data.lettersResults,
         [letter]: {
@@ -158,17 +162,20 @@ export const DiagnosisView: React.FC<DiagnosisViewProps> = ({
           beginning: {
             ...current?.beginning,
             targetWord: current?.beginning?.targetWord || ARABIC_LETTERS_MAP[letter].examples.beginning.words[0].word,
-            production: status
+            production: status,
+            notes: consistentDiagnosisNote(status, current?.beginning?.notes)
           },
           middle: {
             ...current?.middle,
             targetWord: current?.middle?.targetWord || ARABIC_LETTERS_MAP[letter].examples.middle.words[0].word,
-            production: status
+            production: status,
+            notes: consistentDiagnosisNote(status, current?.middle?.notes)
           },
           end: {
             ...current?.end,
             targetWord: current?.end?.targetWord || ARABIC_LETTERS_MAP[letter].examples.end.words[0].word,
-            production: status
+            production: status,
+            notes: consistentDiagnosisNote(status, current?.end?.notes)
           }
         }
       }
@@ -280,6 +287,7 @@ export const DiagnosisView: React.FC<DiagnosisViewProps> = ({
     const updated = {
       ...data,
       summaryConclusion: summary,
+      summaryNeedsReview: false,
       speechIntelligibilityScore: currentScore
     };
 
@@ -717,7 +725,7 @@ export const DiagnosisView: React.FC<DiagnosisViewProps> = ({
                                 <SavedField
                                   type="text"
                                   placeholder="مثال: يبدل الراء بالياء (ينطق يمان)"
-                                  aria-label="ملاحظات النطق" value={item?.beginning?.notes || ''}
+                                  aria-label="ملاحظات النطق" value={consistentDiagnosisNote(item?.beginning?.production, item?.beginning?.notes)}
                                   onChange={e => handleNotesChange(letter, 'beginning', e.target.value)}
                                   className="w-full p-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg font-medium"
                                 />
@@ -731,7 +739,7 @@ export const DiagnosisView: React.FC<DiagnosisViewProps> = ({
                                 <SavedField
                                   type="text"
                                   placeholder="مثال: يكرر الصوت أو يحذفه"
-                                  aria-label="ملاحظات النطق" value={item?.middle?.notes || ''}
+                                  aria-label="ملاحظات النطق" value={consistentDiagnosisNote(item?.middle?.production, item?.middle?.notes)}
                                   onChange={e => handleNotesChange(letter, 'middle', e.target.value)}
                                   className="w-full p-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg font-medium"
                                 />
@@ -745,7 +753,7 @@ export const DiagnosisView: React.FC<DiagnosisViewProps> = ({
                                 <SavedField
                                   type="text"
                                   placeholder="مثال: يحذف الحرف نهائياً"
-                                  aria-label="ملاحظات النطق" value={item?.end?.notes || ''}
+                                  aria-label="ملاحظات النطق" value={consistentDiagnosisNote(item?.end?.production, item?.end?.notes)}
                                   onChange={e => handleNotesChange(letter, 'end', e.target.value)}
                                   className="w-full p-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg font-medium"
                                 />
@@ -763,6 +771,7 @@ export const DiagnosisView: React.FC<DiagnosisViewProps> = ({
         </div>
 
         {/* Conclusion / Summary notes with Auto-generate Button & Direct Manual Edit */}
+        {data.summaryNeedsReview && <p role="status" className="rounded-lg bg-amber-50 p-3 text-amber-900">تغيّرت نتائج النطق. راجع الخلاصة أو أعد توليدها قبل الطباعة؛ لم نستبدل نصك المحفوظ تلقائياً.</p>}
         <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 mb-8 space-y-3">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <label className="font-black text-slate-800 text-xs flex items-center gap-2">

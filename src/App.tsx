@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import type { User } from 'firebase/auth';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { setDocumentHijriDate } from './services/dateService';
 import {
   BookOpen,
   ClipboardList,
@@ -109,6 +110,7 @@ export default function App() {
       return;
     }
     return onAuthStateChanged(auth, nextUser => {
+      setDocumentHijriDate('');
       setUser(nextUser);
       setCheckingAuth(false);
       if (nextUser) void recordLogin(nextUser.uid, nextUser.email).catch(console.error);
@@ -315,7 +317,8 @@ function WorkspaceApp({ user }: { user: User | null }) {
                   onChange={e => setActiveStudentId(e.target.value)}
                   className="bg-sky-800 text-white font-bold text-xs rounded-lg px-2.5 py-1.5 focus:outline-hidden border border-sky-600 cursor-pointer"
                 >
-                  {students.map(s => (
+                  {currentStudent?.deletedAt && <option value={activeStudentId}>اختر طالباً أو استرجع طالباً محذوفاً</option>}
+                  {students.filter(s => !s.deletedAt).map(s => (
                     <option key={s.id} value={s.id}>
                       {s.fullName} ({s.grade})
                     </option>
@@ -324,6 +327,8 @@ function WorkspaceApp({ user }: { user: User | null }) {
               </div>
 
               {/* Add New Student Button */}
+              {!currentStudent?.deletedAt && <><button type="button" className="rounded-xl bg-white px-3 py-2 text-xs font-bold text-sky-900" onClick={() => { setActiveTab('casestudy'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>تعديل اسم وبيانات الطالب</button><button type="button" className="rounded-xl bg-rose-50 px-3 py-2 text-xs font-bold text-rose-800" onClick={() => { if (!window.confirm(`نقل الطالب ${currentStudent.fullName} إلى المحذوفين؟ تبقى بياناته قابلة للاسترجاع.`)) return; setStudents(previous => previous.map(student => student.id === currentStudent.id ? { ...student, deletedAt: new Date().toISOString() } : student)); const next = students.find(student => student.id !== currentStudent.id && !student.deletedAt); if (next) setActiveStudentId(next.id); }}>حذف الطالب</button></>}
+              {students.some(student => student.deletedAt) && <details className="rounded-xl bg-white p-2 text-xs text-sky-900"><summary>الطلاب المحذوفون — استرجاع</summary>{students.filter(student => student.deletedAt).map(student => <button key={student.id} type="button" className="block p-2 underline" onClick={() => { setStudents(previous => previous.map(item => item.id === student.id ? { ...item, deletedAt: null } : item)); setActiveStudentId(student.id); }}>استرجاع {student.fullName}</button>)}</details>}
               <button
                 onClick={() => setIsNewStudentModalOpen(true)}
                 className="flex items-center gap-1.5 bg-sky-600 hover:bg-sky-500 text-white font-black text-xs px-3 py-2 rounded-xl shadow-xs transition-all active:scale-95 cursor-pointer"
@@ -516,6 +521,7 @@ function WorkspaceApp({ user }: { user: User | null }) {
 
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8">
+        {currentStudent?.deletedAt && activeTab !== 'letters' ? <p className="rounded-xl bg-white p-6">الطالب في المحذوفين. استرجعه من القائمة أعلاه أو سجل طالباً جديداً لعرض النماذج.</p> : <>
         {activeTab === 'letters' && <LettersDirectory />}
 
         {activeTab === 'casestudy' && (
@@ -597,6 +603,7 @@ function WorkspaceApp({ user }: { user: User | null }) {
           />
         )}
 
+        </>}
       </main>
 
       {/* New Student Registration Modal */}
