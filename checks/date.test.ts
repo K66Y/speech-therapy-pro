@@ -3,9 +3,9 @@ import assert from 'node:assert/strict';
 import { formatHijriDate, getLiveHijriDate, normalizeDigits } from '../src/services/dateService';
 import { displayText } from '../src/services/displayText';
 
-test('legacy Hijri dates retain their date in day/month/year order', () => {
-  assert.equal(formatHijriDate('1447/02/02 هـ'), '\u206602/02/1447\u2069 هـ');
-  assert.equal(formatHijriDate('١٤٤٧/٠٢/٢ هـ'), '\u206602/02/1447\u2069 هـ');
+test('legacy Hijri dates retain their date in year/month/day order', () => {
+  assert.equal(formatHijriDate('1447/02/02 هـ'), '\u20661447/02/02هـ\u2069');
+  assert.equal(formatHijriDate('١٤٤٧/٠٢/٢ هـ'), '\u20661447/02/02هـ\u2069');
   assert.equal(formatHijriDate(formatHijriDate('1447/02/02')), formatHijriDate('1447/02/02'));
 });
 test('invalid dates never become a fabricated Hijri date', () => {

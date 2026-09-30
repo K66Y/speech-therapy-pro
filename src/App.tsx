@@ -271,6 +271,7 @@ function WorkspaceApp({ user }: { user: User | null }) {
       await exportPlansDocx(currentStudent, currentLTPlan, currentSTPlan);
     } catch (e) {
       console.error(e);
+      window.alert('تعذر تجهيز ملف Word. تحقق من الاتصال ثم أعد المحاولة. إذا استمر الخطأ، أرسل صورة الرسالة.');
     } finally {
       setIsExporting(false);
       setIsExportMenuOpen(false);
@@ -324,10 +325,23 @@ function WorkspaceApp({ user }: { user: User | null }) {
                     </option>
                   ))}
                 </select>
+                {!currentStudent?.deletedAt && <details className="relative print:hidden">
+                  <summary aria-label="إدارة بيانات الطالب" title="إدارة بيانات الطالب" className="list-none cursor-pointer rounded-lg p-2 text-white hover:bg-sky-700">✎</summary>
+                  <div className="absolute top-full left-0 z-50 mt-2 w-60 rounded-xl border bg-white p-2 shadow-xl">
+                    <button type="button" className="block w-full rounded-lg p-3 text-right text-sky-900" onClick={e => { e.currentTarget.closest('details')?.removeAttribute('open'); setActiveTab('casestudy'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>تعديل اسم وبيانات الطالب</button>
+                    <button type="button" className="block w-full rounded-lg p-3 text-right text-rose-800 hover:bg-rose-50" onClick={e => {
+                      e.currentTarget.closest('details')?.removeAttribute('open');
+                      if (!window.confirm(`نقل الطالب ${currentStudent.fullName} إلى المحذوفين؟ تبقى بياناته قابلة للاسترجاع.`)) return;
+                      setStudents(previous => previous.map(student => student.id === currentStudent.id ? { ...student, deletedAt: new Date().toISOString() } : student));
+                      const next = students.find(student => student.id !== currentStudent.id && !student.deletedAt);
+                      if (next) setActiveStudentId(next.id);
+                    }}>حذف الطالب</button>
+                  </div>
+                </details>}
               </div>
 
               {/* Add New Student Button */}
-              {!currentStudent?.deletedAt && <><button type="button" className="rounded-xl bg-white px-3 py-2 text-xs font-bold text-sky-900" onClick={() => { setActiveTab('casestudy'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>تعديل اسم وبيانات الطالب</button><button type="button" className="rounded-xl bg-rose-50 px-3 py-2 text-xs font-bold text-rose-800" onClick={() => { if (!window.confirm(`نقل الطالب ${currentStudent.fullName} إلى المحذوفين؟ تبقى بياناته قابلة للاسترجاع.`)) return; setStudents(previous => previous.map(student => student.id === currentStudent.id ? { ...student, deletedAt: new Date().toISOString() } : student)); const next = students.find(student => student.id !== currentStudent.id && !student.deletedAt); if (next) setActiveStudentId(next.id); }}>حذف الطالب</button></>}
+
               {students.some(student => student.deletedAt) && <details className="rounded-xl bg-white p-2 text-xs text-sky-900"><summary>الطلاب المحذوفون — استرجاع</summary>{students.filter(student => student.deletedAt).map(student => <button key={student.id} type="button" className="block p-2 underline" onClick={() => { setStudents(previous => previous.map(item => item.id === student.id ? { ...item, deletedAt: null } : item)); setActiveStudentId(student.id); }}>استرجاع {student.fullName}</button>)}</details>}
               <button
                 onClick={() => setIsNewStudentModalOpen(true)}
@@ -387,10 +401,12 @@ function WorkspaceApp({ user }: { user: User | null }) {
                       <button
                         onClick={async () => {
                           setIsExporting(true);
+                          try {
                           const { exportLettersGuideDocx } = await import('./services/docxExportService');
                           await exportLettersGuideDocx();
-                          setIsExporting(false);
-                          setIsExportMenuOpen(false);
+                          
+                          } catch (error) { console.error(error); window.alert('تعذر تصدير Word. أعد المحاولة بعد التحقق من الاتصال.'); }
+                          finally { setIsExporting(false); setIsExportMenuOpen(false); }
                         }}
                         className="w-full text-right p-2 rounded-lg hover:bg-sky-50 hover:text-sky-900 font-bold flex items-center justify-between cursor-pointer"
                       >
@@ -400,10 +416,12 @@ function WorkspaceApp({ user }: { user: User | null }) {
                       <button
                         onClick={async () => {
                           setIsExporting(true);
+                          try {
                           const { exportCaseStudyDocx } = await import('./services/docxExportService');
                           await exportCaseStudyDocx(currentCaseStudy);
-                          setIsExporting(false);
-                          setIsExportMenuOpen(false);
+                          
+                          } catch (error) { console.error(error); window.alert('تعذر تصدير Word. أعد المحاولة بعد التحقق من الاتصال.'); }
+                          finally { setIsExporting(false); setIsExportMenuOpen(false); }
                         }}
                         className="w-full text-right p-2 rounded-lg hover:bg-sky-50 hover:text-sky-900 font-bold flex items-center justify-between cursor-pointer"
                       >
@@ -413,10 +431,12 @@ function WorkspaceApp({ user }: { user: User | null }) {
                       <button
                         onClick={async () => {
                           setIsExporting(true);
+                          try {
                           const { exportDiagnosisDocx } = await import('./services/docxExportService');
                           await exportDiagnosisDocx(currentStudent, currentAssessment);
-                          setIsExporting(false);
-                          setIsExportMenuOpen(false);
+                          
+                          } catch (error) { console.error(error); window.alert('تعذر تصدير Word. أعد المحاولة بعد التحقق من الاتصال.'); }
+                          finally { setIsExporting(false); setIsExportMenuOpen(false); }
                         }}
                         className="w-full text-right p-2 rounded-lg hover:bg-sky-50 hover:text-sky-900 font-bold flex items-center justify-between cursor-pointer"
                       >
@@ -433,12 +453,14 @@ function WorkspaceApp({ user }: { user: User | null }) {
                       <button
                         onClick={async () => {
                           setIsExporting(true);
+                          try {
                           if (currentHwList[0]) {
                             const { exportHomeworkDocx } = await import('./services/docxExportService');
                             await exportHomeworkDocx(currentStudent, currentHwList[0]);
                           }
-                          setIsExporting(false);
-                          setIsExportMenuOpen(false);
+                          
+                          } catch (error) { console.error(error); window.alert('تعذر تصدير Word. أعد المحاولة بعد التحقق من الاتصال.'); }
+                          finally { setIsExporting(false); setIsExportMenuOpen(false); }
                         }}
                         className="w-full text-right p-2 rounded-lg hover:bg-sky-50 hover:text-sky-900 font-bold flex items-center justify-between cursor-pointer"
                       >
@@ -448,10 +470,12 @@ function WorkspaceApp({ user }: { user: User | null }) {
                       <button
                         onClick={async () => {
                           setIsExporting(true);
+                          try {
                           const { exportFinalReportDocx } = await import('./services/docxExportService');
                           await exportFinalReportDocx(currentStudent, currentFinalReport);
-                          setIsExporting(false);
-                          setIsExportMenuOpen(false);
+                          
+                          } catch (error) { console.error(error); window.alert('تعذر تصدير Word. أعد المحاولة بعد التحقق من الاتصال.'); }
+                          finally { setIsExporting(false); setIsExportMenuOpen(false); }
                         }}
                         className="w-full text-right p-2 rounded-lg hover:bg-sky-50 hover:text-sky-900 font-bold flex items-center justify-between cursor-pointer"
                       >
@@ -622,9 +646,7 @@ function WorkspaceApp({ user }: { user: User | null }) {
           <p className="text-slate-600">
             ابتدائية ومتوسطة الشط وبرامج التربية الخاصة
           </p>
-          <p className="text-[11px] text-slate-400 pt-1">
-            جميع النماذج متوافقة مع معايير وزارة التعليم وقابلة للتصدير الفوري بصيغة وورد (.docx) والطباعة الرسمية المباشرة
-          </p>
+
         </div>
       </footer>
     </div>

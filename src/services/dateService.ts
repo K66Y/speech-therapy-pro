@@ -36,7 +36,7 @@ export function formatHijriDate(value: string): string {
   const day = yearFirst ? last : first;
   if (year.length !== 4 || Number(year) >= 1700 || Number(middle) < 1 || Number(middle) > 12 || Number(day) < 1 || Number(day) > 30) return clean;
   // LTR isolation stops slash-separated dates from reversing inside RTL text and Word.
-  return `\u2066${day.padStart(2, '0')}/${middle.padStart(2, '0')}/${year}\u2069 هـ`;
+  return `\u2066${year}/${middle.padStart(2, '0')}/${day.padStart(2, '0')}هـ\u2069`;
 }
 
 /**

@@ -39,7 +39,7 @@ export const EditableText: React.FC<EditableTextProps> = ({
 
   const save = () => {
     const normalized = isDate ? formatHijriDate(draft.trim()) : draft.trim();
-    const problem = validate?.(normalized) || (isDate && normalized && !normalized.startsWith('\u2066') ? 'اكتب التاريخ الهجري بصيغة يوم/شهر/سنة، مثل 19/04/1448' : undefined);
+    const problem = validate?.(normalized) || (isDate && normalized && !normalized.startsWith('\u2066') ? 'اكتب التاريخ الهجري بصيغة سنة/شهر/يوم، مثل 1448/04/19' : undefined);
     if (problem) { setError(problem); return; }
     setError('');
     onSave(normalized);

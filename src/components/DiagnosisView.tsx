@@ -303,6 +303,7 @@ export const DiagnosisView: React.FC<DiagnosisViewProps> = ({
       await exportDiagnosisDocx(student, { ...data, speechIntelligibilityScore: currentScore });
     } catch (e) {
       console.error(e);
+      window.alert('تعذر تجهيز ملف Word. تحقق من الاتصال ثم أعد المحاولة. إذا استمر الخطأ، أرسل صورة الرسالة.');
     } finally {
       setIsExporting(false);
     }
@@ -429,7 +430,7 @@ export const DiagnosisView: React.FC<DiagnosisViewProps> = ({
               <Sparkles className="w-8 h-8 text-sky-600 opacity-60" />
             </div>
 
-            <div className="pt-2 border-t border-sky-200/60 mt-2 flex items-center justify-between text-[11px]">
+            <div className="pt-2 border-t border-sky-200/60 mt-2 flex items-center justify-between text-[11px] print:hidden">
               <span className="text-slate-500 font-medium">
                 {isManualScoreMode ? 'وضع التعديل اليدوي للنسبة' : 'حساب تلقائي من الجدول'}
               </span>
@@ -776,7 +777,7 @@ export const DiagnosisView: React.FC<DiagnosisViewProps> = ({
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <label className="font-black text-slate-800 text-xs flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-sky-700" />
-              الخلاصة الإكلينيكية - قابلة للتعديل المباشر:
+              الخلاصة الإكلينيكية<span className="print:hidden"> - قابلة للتعديل المباشر</span>:
             </label>
 
             {/* Smart Auto-Generate Button */}
@@ -790,7 +791,7 @@ export const DiagnosisView: React.FC<DiagnosisViewProps> = ({
           </div>
 
           {generatedNotice && (
-            <div className="p-2.5 rounded-xl bg-sky-100 border border-sky-300 text-sky-950 text-xs font-bold animate-pulse">
+            <div className="p-2.5 rounded-xl bg-sky-100 border border-sky-300 text-sky-950 text-xs font-bold animate-pulse print:hidden">
               ✓ تم استخراج وتحليل بيانات جميع الحروف وتوليد التقرير الإكلينيكي بنجاح! يمكنك الآن تعديله يدوياً حسب الرغبة.
             </div>
           )}

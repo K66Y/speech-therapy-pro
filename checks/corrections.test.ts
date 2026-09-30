@@ -22,7 +22,7 @@ test('homework supplies three words per position and preserves extra saved words
 });
 test('manual document date is normalized and shared with export', () => {
   assert.equal(setDocumentHijriDate('١٤٤٨/٠٤/١٩'), true);
-  assert.equal(getDocumentHijriDate(), '\u206619/04/1448\u2069 هـ');
+  assert.equal(getDocumentHijriDate(), '\u20661448/04/19هـ\u2069');
   assert.equal(getDocumentGregorianDate(), '');
   assert.equal(setDocumentHijriDate('33/14/1448'), false);
   setDocumentHijriDate('');

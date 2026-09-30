@@ -433,7 +433,7 @@ export const LettersDirectory: React.FC = () => {
             <div className="flex items-center gap-2">
               <Camera className="w-5 h-5 text-sky-800" />
               <h3 className="text-lg font-black text-slate-900">
-                نماذج مواضع الحرف الثلاثة (ثلاث كلمات واقعية لكل موضع مع إمكانية التعديل)
+                نماذج مواضع الحرف الثلاثة (ثلاث كلمات واقعية لكل موضع<span className="print:hidden"> مع إمكانية التعديل</span>)
               </h3>
             </div>
             <span className="text-xs bg-sky-100 text-sky-950 font-black px-3 py-1 rounded-full shadow-xs">

@@ -15,7 +15,7 @@ import {
   BorderStyle,
   VerticalAlign
 } from 'docx';
-import { saveAs } from 'file-saver';
+import { downloadDocument as saveAs } from './downloadDocument';
 import {
   StudentProfile,
   CaseStudyData,
@@ -64,7 +64,8 @@ function loadMinistryLogo(): Promise<Uint8Array> {
         if (!response.ok) throw new Error('تعذر تحميل شعار وزارة التعليم');
         return response.arrayBuffer();
       })
-      .then(buffer => new Uint8Array(buffer));
+      .then(buffer => new Uint8Array(buffer))
+      .catch(error => { ministryLogoPromise = null; throw error; });
   }
   return ministryLogoPromise;
 }
@@ -880,13 +881,11 @@ export async function exportHomeworkDocx(student: StudentProfile, homework: Home
             ]
           }),
           createRtlTable([
-            new TableRow({ children: homeworkPositions.map(position => createStyledCell(position, 33, true)) }),
-            ...Array.from({ length: Math.max(...homeworkColumns(homework).map(column => column.length)) }, (_, row) =>
-              new TableRow({ children: homeworkColumns(homework).map(column => {
-                const word = column[row];
-                return createStyledCell(word ? word.word + '\n' + '□ '.repeat(Math.min(20, Math.max(1, word.repetitionCount))) : '', 33);
-              }) })
-            )
+            new TableRow({ children: ['الكلمة الأولى', 'الكلمة الثانية', 'الكلمة الثالثة', 'التكرار اليومي'].map(title => createStyledCell(title, 25, true)) }),
+            ...homeworkColumns(homework).map((words, positionIndex) => new TableRow({ children: [
+              ...words.slice(0, 3).map((word, index) => createStyledCell((index === 0 ? homeworkPositions[positionIndex] + '\n' : '') + word.word, 25)),
+              createStyledCell('□ □ □ □ □', 25)
+            ] }))
           ]),
           new Paragraph({
             alignment: AlignmentType.RIGHT,

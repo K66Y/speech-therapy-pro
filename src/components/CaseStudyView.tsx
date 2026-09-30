@@ -70,6 +70,7 @@ export const CaseStudyView: React.FC<CaseStudyViewProps> = ({
       await exportCaseStudyDocx(data);
     } catch (e) {
       console.error(e);
+      window.alert('تعذر تجهيز ملف Word. تحقق من الاتصال ثم أعد المحاولة. إذا استمر الخطأ، أرسل صورة الرسالة.');
     } finally {
       setIsExporting(false);
     }

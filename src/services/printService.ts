@@ -11,7 +11,7 @@ export async function triggerOfficialPrint(elementSelector?: string, inspectOnly
   document.body.appendChild(frame);
   const doc = frame.contentDocument!;
   doc.open();
-  doc.write('<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>منظومة تدريبات النطق</title></head><body></body></html>');
+  doc.write('<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title></title></head><body></body></html>');
   doc.close();
   const styles = Array.from(document.querySelectorAll('style,link[rel="stylesheet"]')).map(node => {
     const copy = node.cloneNode(true) as HTMLElement;

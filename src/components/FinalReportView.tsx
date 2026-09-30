@@ -46,6 +46,7 @@ export const FinalReportView: React.FC<FinalReportViewProps> = ({
       await exportFinalReportDocx(student, data);
     } catch (e) {
       console.error(e);
+      window.alert('تعذر تجهيز ملف Word. تحقق من الاتصال ثم أعد المحاولة. إذا استمر الخطأ، أرسل صورة الرسالة.');
     } finally {
       setIsExporting(false);
     }
