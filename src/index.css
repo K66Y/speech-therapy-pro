@@ -38,6 +38,18 @@
   }
 }
 
+@media (max-width: 640px) {
+  html { font-size: 15px; }
+  body { overflow-x: hidden; }
+  input, select, textarea, button { font-size: 16px; }
+  .overflow-x-auto { -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
+  .overflow-x-auto > table { min-width: 760px; }
+  .printable-sheet, .printable-document { border-radius: 14px; padding: 12px !important; }
+  .official-header-grid { grid-template-columns: 1.2fr .8fr 1fr; gap: 4px; }
+  .official-kliche-container { padding: 10px; }
+  .official-kliche-container .h-28 { height: 5rem; }
+}
+
 @media print {
   @page {
     size: A4 portrait;

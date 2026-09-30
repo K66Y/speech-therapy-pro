@@ -82,7 +82,7 @@ export function AuthScreen() {
           <label className="block text-sm font-bold text-slate-700 mb-2">تأكيد كلمة المرور</label>
           <input type="password" autoComplete="new-password" required minLength={6} value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} className="w-full border border-slate-300 rounded-xl px-4 py-3 mb-4 focus:outline-none focus:ring-2 focus:ring-sky-500" />
         </>}
-        {error && <p role="alert" className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-xl p-3 mb-4">{error}</p>}
+        {error && <p role="alert" className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-xl p-3 mb-4">{error}{mode === 'login' && <span className="mt-2 block text-xs">إذا أنشأت الحساب بواسطة Google، ادخل بزر Google أولاً ثم عيّن كلمة مرور مستقلة للتطبيق من قائمة الحساب.</span>}</p>}
         <button disabled={loading} className="w-full bg-sky-800 hover:bg-sky-700 disabled:opacity-60 text-white rounded-xl py-3 font-black">{loading ? 'جارٍ التحقق...' : mode === 'signup' ? 'إنشاء الحساب' : 'تسجيل الدخول'}</button>
         <button type="button" disabled={loading} onClick={() => { setMode(mode === 'login' ? 'signup' : 'login'); setError(''); }} className="w-full mt-3 text-sky-800 hover:text-sky-950 font-bold text-sm">{mode === 'login' ? 'ليس لديك حساب؟ إنشاء حساب جديد' : 'لديك حساب بالفعل؟ تسجيل الدخول'}</button>
         <div className="my-4 flex items-center gap-3 text-xs text-slate-400"><span className="h-px flex-1 bg-slate-200" />أو<span className="h-px flex-1 bg-slate-200" /></div>

@@ -18,6 +18,7 @@ export function createNewStudentRecords(student: StudentProfile, targetLettersIn
   const targetLetter = targetLetters[0] || 'ر';
   const currentDate = getLiveHijriDate();
   const letterInfo = ARABIC_LETTERS_MAP[targetLetter] || ARABIC_LETTERS_MAP['ر'];
+  const knownDiagnoses = (student.diagnosisCategories || [student.diagnosisCategory]).filter(value => ['إبدال', 'حذف', 'تشويه', 'إضافة'].includes(value)) as Array<'إبدال' | 'حذف' | 'تشويه' | 'إضافة'>;
 
   // 1. استمارة دراسة الحالة
   const caseStudy: CaseStudyData = {
@@ -76,25 +77,23 @@ export function createNewStudentRecords(student: StudentProfile, targetLettersIn
   const lettersResults: any = {};
   ARABIC_LETTERS_LIST.forEach(l => {
     const isTarget = targetLetters.includes(l);
+    const production = isTarget ? (knownDiagnoses[targetLetters.indexOf(l)] || knownDiagnoses[0] || 'إبدال') : 'صحيح';
     lettersResults[l] = {
       letter: l,
       beginning: {
         targetWord: ARABIC_LETTERS_MAP[l].examples.beginning.words[0].word,
-        production: isTarget ? 'إبدال' : 'صحيح',
-        substitutedLetter: isTarget ? 'ي' : undefined,
-        notes: isTarget ? 'إبدال صوتي بحاجة لتدريب' : 'نطق سليم'
+        production,
+        notes: isTarget ? `${production} في الصوت المستهدف ويحتاج إلى تدريب وفق نتيجة التقييم.` : 'نطق سليم'
       },
       middle: {
         targetWord: ARABIC_LETTERS_MAP[l].examples.middle.words[0].word,
-        production: isTarget ? 'إبدال' : 'صحيح',
-        substitutedLetter: isTarget ? 'ي' : undefined,
-        notes: isTarget ? 'إبدال صوتي بحاجة لتدريب' : 'نطق سليم'
+        production,
+        notes: isTarget ? `${production} في الصوت المستهدف ويحتاج إلى تدريب وفق نتيجة التقييم.` : 'نطق سليم'
       },
       end: {
         targetWord: ARABIC_LETTERS_MAP[l].examples.end.words[0].word,
-        production: isTarget ? 'إبدال' : 'صحيح',
-        substitutedLetter: isTarget ? 'ي' : undefined,
-        notes: isTarget ? 'إبدال صوتي بحاجة لتدريب' : 'نطق سليم'
+        production,
+        notes: isTarget ? `${production} في الصوت المستهدف ويحتاج إلى تدريب وفق نتيجة التقييم.` : 'نطق سليم'
       }
     };
   });
@@ -182,7 +181,7 @@ export function createNewStudentRecords(student: StudentProfile, targetLettersIn
         currentPercentage: 60,
         startDate: currentDate,
         targetDate: currentDate,
-        status: 'pending',
+        status: 'in_progress',
         notes: 'قيد التدريب في الجلسات القادمة.'
       }
     ]
@@ -210,7 +209,7 @@ export function createNewStudentRecords(student: StudentProfile, targetLettersIn
     currentPercentage: 0,
     startDate: currentDate,
     targetDate: currentDate,
-    status: 'pending' as const,
+    status: 'in_progress' as const,
     notes: ''
   })));
     longTermPlan.goals = targetLetters.map((letter, index) => ({

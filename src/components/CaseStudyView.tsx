@@ -181,15 +181,6 @@ export const CaseStudyView: React.FC<CaseStudyViewProps> = ({
               <span className="text-slate-500 block mb-1">العمر التقديري المرتبط بالصف:</span>
               <SavedField type="text" readOnly value={std.age} className="w-full bg-slate-100 border border-slate-200 rounded-lg p-2 font-bold text-slate-600" />
             </div>
-            <div>
-              <span className="text-slate-500 block mb-1">اسم ولي الأمر:</span>
-              <SavedField
-                type="text"
-                aria-label="اسم ولي الأمر" value={std.guardianName}
-                onChange={e => { const updated = { ...data, student: { ...std, guardianName: e.target.value } }; setData(updated); onUpdateCaseStudy(updated); }}
-                className="w-full bg-white border border-slate-200 rounded-lg p-2 font-bold text-slate-900"
-              />
-            </div>
           </div>
         </div>
 
@@ -452,7 +443,6 @@ export const CaseStudyView: React.FC<CaseStudyViewProps> = ({
               {SCHOOL_KLICHE.specialistName}
             </span>
             <div className="h-0.5 w-40 mx-auto bg-emerald-700/40 my-2"></div>
-            <span className="text-[11px] text-slate-500 font-medium">التوقيع</span>
           </div>
         </div>
       </div>

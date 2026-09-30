@@ -39,10 +39,10 @@ export const DiagnosisView: React.FC<DiagnosisViewProps> = ({
   const [data, setData] = useState<DiagnosticAssessment>(assessment);
   const [selectedLetter, setSelectedLetter] = useState<ArabicLetterKey>(student.targetLetters?.[0] || 'ر');
   useEffect(() => setData(assessment), [assessment]);
-  useEffect(() => setSelectedLetter(student.targetLetters?.[0] || 'ر'), [student.id, student.targetLetters]);
+  useEffect(() => { setSelectedLetter(student.targetLetters?.[0] || 'ر'); setLetterView(student.targetLetters?.length ? 'targets' : 'all'); }, [student.id, student.targetLetters]);
   const [searchTerm, setSearchTerm] = useState('');
   const [errorOnlyFilter, setErrorOnlyFilter] = useState(false);
-  const [showAllLetters, setShowAllLetters] = useState(true);
+  const [letterView, setLetterView] = useState<'all' | 'targets' | 'single'>(() => student.targetLetters?.length ? 'targets' : 'all');
   const [isExporting, setIsExporting] = useState(false);
   const [generatedNotice, setGeneratedNotice] = useState(false);
   const [isManualScoreMode, setIsManualScoreMode] = useState(false);
@@ -211,6 +211,19 @@ export const DiagnosisView: React.FC<DiagnosisViewProps> = ({
     commitAssessment(updated);
   };
 
+  const applyRecordedDiagnosisToTargets = () => {
+    const known = (student.diagnosisCategories || [student.diagnosisCategory]).filter(value => ['إبدال', 'حذف', 'تشويه', 'إضافة'].includes(value)) as Array<'إبدال' | 'حذف' | 'تشويه' | 'إضافة'>;
+    if (!student.targetLetters?.length || !known.length) return window.alert('اختر الحروف المستهدفة ونوع الاضطراب من دراسة الحالة أولاً.');
+    const results = { ...data.lettersResults };
+    student.targetLetters.forEach((letter, index) => {
+      const production = known[index] || known[0];
+      const current = results[letter];
+      results[letter] = { letter, ...Object.fromEntries((['beginning', 'middle', 'end'] as const).map(position => [position, { ...current?.[position], targetWord: current?.[position]?.targetWord || ARABIC_LETTERS_MAP[letter].examples[position].words[0].word, production, substitutedLetter: production === 'إبدال' ? current?.[position]?.substitutedLetter : undefined, notes: consistentDiagnosisNote(production, current?.[position]?.notes) }])) } as typeof current;
+    });
+    commitAssessment({ ...data, lettersResults: results, primaryErrors: student.targetLetters.map((letter, index) => `${known[index] || known[0]} في حرف (${letter})`), summaryNeedsReview: true });
+    setLetterView('targets');
+  };
+
   // توليد الخلاصة الإكلينيكية آلياً بناءً على التشخيص الميداني
   const handleAutoGenerateSummary = () => {
     const substitutedLetters: string[] = [];
@@ -219,12 +232,19 @@ export const DiagnosisView: React.FC<DiagnosisViewProps> = ({
     const addedLetters: string[] = [];
     const positionsAffected = new Set<string>();
 
-    ARABIC_LETTERS_LIST.forEach(letter => {
+    const summaryLetters = letterView === 'single' ? [selectedLetter] : letterView === 'targets' && student.targetLetters?.length ? student.targetLetters : ARABIC_LETTERS_LIST;
+    let scopedAttempts = 0;
+    let scopedCorrect = 0;
+    summaryLetters.forEach(letter => {
       const res = data.lettersResults[letter];
       if (!res) return;
 
       (['beginning', 'middle', 'end'] as const).forEach(pos => {
         const prod = res[pos]?.production;
+        if (prod) {
+          scopedAttempts += 1;
+          if (prod === 'صحيح') scopedCorrect += 1;
+        }
         const posArabic = pos === 'beginning' ? 'أول الكلمة' : pos === 'middle' ? 'وسط الكلمة' : 'آخر الكلمة';
 
         if (prod === 'إبدال') {
@@ -242,6 +262,7 @@ export const DiagnosisView: React.FC<DiagnosisViewProps> = ({
         }
       });
     });
+    const scopedScore = scopedAttempts > 0 ? Math.round((scopedCorrect / scopedAttempts) * 100) : 0;
 
     const uniqueSub = Array.from(new Set(substitutedLetters));
     const uniqueDist = Array.from(new Set(distortedLetters));
@@ -249,12 +270,15 @@ export const DiagnosisView: React.FC<DiagnosisViewProps> = ({
     const uniqueAdded = Array.from(new Set(addedLetters));
     const totalErrors = uniqueSub.length + uniqueDist.length + uniqueOm.length + uniqueAdded.length;
 
+    const targetLetters = student.targetLetters || [];
     let summary = `ملخص النتائج المدخلة في اختبار النطق للطالب (${student.fullName})؛ `;
+    if (letterView === 'single') summary += `نطاق هذه الخلاصة هو حرف (${selectedLetter}) فقط. `;
+    else if (targetLetters.length) summary += `الحروف المستهدفة المسجلة في خطة الطالب هي (${targetLetters.join('، ')}). `;
 
     if (totalErrors === 0) {
-      summary += `لم تُسجّل أخطاء ضمن المواضع المقيمة، وبلغت نسبة الأداء المحسوبة ${currentScore}%. تُراجع النتائج مع اكتمال الفحص قبل اعتماد التشخيص أو قرار إنهاء التدريب.`;
+      summary += `لم تُسجّل أخطاء ضمن المواضع المقيمة، وبلغت نسبة الأداء المحسوبة في نطاق العرض ${scopedScore}%. تُراجع النتائج مع اكتمال الفحص قبل اعتماد التشخيص أو قرار إنهاء التدريب.`;
     } else {
-      summary += `أظهرت نتائج التقييم وجود اضطرابات نطقية محددة بنسبة وضوح كلام إجمالية بلغت (${currentScore}%). `;
+      summary += `أظهرت نتائج التقييم في نطاق العرض وجود اضطرابات نطقية محددة، وبلغت نسبة الأداء المحسوبة (${scopedScore}%). `;
 
       const detailsList: string[] = [];
       if (uniqueSub.length > 0) {
@@ -318,7 +342,8 @@ export const DiagnosisView: React.FC<DiagnosisViewProps> = ({
 
     const matchesSearch = l.includes(searchTerm) || ARABIC_LETTERS_MAP[l].name.includes(searchTerm);
     if (errorOnlyFilter) return matchesSearch && isError;
-    if (!showAllLetters && l !== selectedLetter) return false;
+    if (letterView === 'targets' && !(student.targetLetters || []).includes(l)) return false;
+    if (letterView === 'single' && l !== selectedLetter) return false;
     return matchesSearch;
   });
 
@@ -382,8 +407,10 @@ export const DiagnosisView: React.FC<DiagnosisViewProps> = ({
       </div>
 
           <div className="mb-3 flex flex-wrap items-center gap-2 text-xs font-bold print:hidden">
-            <button type="button" onClick={() => { setSearchTerm(''); setShowAllLetters(true); setErrorOnlyFilter(false); }} className={`rounded-lg border px-3 py-2 ${showAllLetters && !errorOnlyFilter ? 'bg-sky-800 text-white' : 'bg-white text-slate-700'}`}>جميع الحروف</button>
-            <button type="button" onClick={() => { setSearchTerm(''); setShowAllLetters(true); setErrorOnlyFilter(true); }} className={`rounded-lg border px-3 py-2 ${errorOnlyFilter ? 'bg-rose-700 text-white' : 'bg-white text-slate-700'}`}>تحديد الحروف المضطربة</button>
+            <button type="button" onClick={() => { setSearchTerm(''); setLetterView('all'); setErrorOnlyFilter(false); }} className={`rounded-lg border px-3 py-2 ${letterView === 'all' && !errorOnlyFilter ? 'bg-sky-800 text-white' : 'bg-white text-slate-700'}`}>جميع الحروف</button>
+            <button type="button" onClick={() => { setSearchTerm(''); setLetterView('targets'); setErrorOnlyFilter(false); }} className={`rounded-lg border px-3 py-2 ${letterView === 'targets' ? 'bg-sky-800 text-white' : 'bg-white text-slate-700'}`}>الحروف المستهدفة ({student.targetLetters?.length || 0})</button>
+            <button type="button" onClick={applyRecordedDiagnosisToTargets} className="rounded-lg border border-sky-300 bg-sky-50 px-3 py-2 text-sky-900">تطبيق الاضطراب المسجل على الحروف المستهدفة</button>
+            <button type="button" onClick={() => { setSearchTerm(''); setLetterView('all'); setErrorOnlyFilter(true); }} className={`rounded-lg border px-3 py-2 ${errorOnlyFilter ? 'bg-rose-700 text-white' : 'bg-white text-slate-700'}`}>تحديد الحروف المضطربة</button>
             <span className="text-slate-500">الحرف المختار: {selectedLetter}</span>
           </div>
 
@@ -479,7 +506,7 @@ export const DiagnosisView: React.FC<DiagnosisViewProps> = ({
 
           <div className="flex items-center gap-2">
             <button
-              onClick={() => { setShowAllLetters(true); setSearchTerm(''); setErrorOnlyFilter(!errorOnlyFilter); }}
+              onClick={() => { setLetterView('all'); setSearchTerm(''); setErrorOnlyFilter(!errorOnlyFilter); }}
               className={`text-xs px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer ${
                 errorOnlyFilter
                   ? 'bg-rose-600 text-white shadow-xs'
@@ -498,7 +525,8 @@ export const DiagnosisView: React.FC<DiagnosisViewProps> = ({
           {ARABIC_LETTERS_LIST.map(letter => {
             const item = data.lettersResults[letter];
             const hasError = (['beginning', 'middle', 'end'] as const).some(position => item?.[position]?.production !== 'صحيح');
-            return <button type="button" key={letter} onClick={() => { setSelectedLetter(letter); setShowAllLetters(false); setErrorOnlyFilter(false); }} aria-pressed={!showAllLetters && selectedLetter === letter} className={`aspect-square rounded-lg border text-base font-black transition-colors ${!showAllLetters && selectedLetter === letter ? 'border-sky-900 bg-sky-800 text-white' : hasError ? 'border-rose-200 bg-rose-50 text-rose-800 hover:bg-rose-100' : 'border-slate-200 bg-white text-slate-700 hover:bg-sky-50'}`}>{letter}</button>;
+            const isTarget = student.targetLetters?.includes(letter);
+            return <button type="button" key={letter} onClick={() => { setSelectedLetter(letter); setLetterView('single'); setErrorOnlyFilter(false); }} aria-pressed={letterView === 'single' && selectedLetter === letter} className={`aspect-square rounded-lg border text-base font-black transition-colors ${letterView === 'single' && selectedLetter === letter ? 'border-sky-900 bg-sky-800 text-white' : isTarget ? 'border-sky-300 bg-sky-100 text-sky-900' : hasError ? 'border-rose-200 bg-rose-50 text-rose-800 hover:bg-rose-100' : 'border-slate-200 bg-white text-slate-700 hover:bg-sky-50'}`}>{letter}</button>;
           })}
         </div>
 
@@ -816,7 +844,6 @@ export const DiagnosisView: React.FC<DiagnosisViewProps> = ({
               {SCHOOL_KLICHE.specialistName}
             </span>
             <div className="h-0.5 w-40 mx-auto bg-sky-700/40 my-2"></div>
-            <span className="text-[11px] text-slate-500 font-medium">التوقيع</span>
           </div>
         </div>
       </div>

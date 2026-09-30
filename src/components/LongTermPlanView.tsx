@@ -54,7 +54,7 @@ export const LongTermPlanView: React.FC<LongTermPlanViewProps> = ({
     const first = data.goals[0];
     const newGoal = { ...(first || {}), id: `ltg-${student.id}-${Date.now()}`, code: `هدف عام ${data.goals.length + 1}`, targetLetter: letter, goalDescription: `أن ينطق الطالب صوت حرف (${letter}) في مواضعه المختلفة وفق معيار الإتقان المحدد.`, successCriterion: first?.successCriterion || '', targetPeriod: first?.targetPeriod || 'فصل دراسي', startingBaseline: '', finalExpectedOutcome: '', evaluationMethod: first?.evaluationMethod || '', progressPercentage: 0 };
     newGoal.id = `ltg-${crypto.randomUUID()}`;
-    const updated = { ...data, goals: [...data.goals, { ...newGoal, status: 'pending' as const }] };
+    const updated = { ...data, goals: [...data.goals, { ...newGoal, status: 'in_progress' as const }] };
     setData(updated);
     onUpdatePlan(updated);
     setAddedGoalId(newGoal.id);
@@ -143,14 +143,14 @@ export const LongTermPlanView: React.FC<LongTermPlanViewProps> = ({
                       </span>
                     <button type="button" className="text-xs text-rose-700 print:hidden" onClick={() => { if (window.confirm('حذف هذا الهدف؟')) { const updated = { ...data, goals: data.goals.filter(goal => goal.id !== g.id) }; setData(updated); onUpdatePlan(updated); } }}>حذف الهدف</button>
                     <label className="text-xs font-bold text-slate-600">الحرف:
-                        <SavedSelect value={g.targetLetter} onChange={e => updateGoal(g.id, { targetLetter: e.target.value as typeof g.targetLetter })} className="mr-1 rounded border border-slate-200 bg-white p-1 print:hidden">{ARABIC_LETTERS_LIST.map(letter => <option key={letter}>{letter}</option>)}</SavedSelect>
+                        <SavedSelect value={g.targetLetter} onChange={e => { const targetLetter = e.target.value as typeof g.targetLetter; const replace = (value: string) => value.split(g.targetLetter).join(targetLetter); updateGoal(g.id, { targetLetter, goalDescription: replace(g.goalDescription), startingBaseline: replace(g.startingBaseline), finalExpectedOutcome: replace(g.finalExpectedOutcome) }); }} className="mr-1 rounded border border-slate-200 bg-white p-1 print:hidden">{ARABIC_LETTERS_LIST.map(letter => <option key={letter}>{letter}</option>)}</SavedSelect>
                         
                       </label>
                     </div>
 
                     <div className="flex items-center gap-2 text-xs">
-                      <span className="hidden print:block">{g.status === 'achieved' ? 'منجز' : g.status === 'in_progress' ? 'تحت التدريب' : 'لم يسجل الإنجاز'}</span>
-                      <button type="button" className={`rounded-lg px-3 py-2 text-xs font-bold ${g.status === 'achieved' ? 'bg-emerald-600 text-white' : g.status === 'in_progress' ? 'bg-amber-500 text-slate-900' : 'bg-slate-200 text-slate-600'}`} onClick={() => updateGoal(g.id, { status: g.status === 'achieved' ? 'in_progress' : g.status === 'in_progress' ? 'pending' : 'achieved' })}>{g.status === 'achieved' ? 'منجز' : g.status === 'in_progress' ? 'تحت التدريب' : 'تسجيل المنجز'}</button>
+                      <span className="hidden print:block">{g.status === 'achieved' ? 'منجز' : 'تحت التدريب'}</span>
+                      <button type="button" className={`rounded-lg px-3 py-2 text-xs font-bold ${g.status === 'achieved' ? 'bg-slate-500 text-white' : 'bg-amber-500 text-slate-900'}`} onClick={() => updateGoal(g.id, { status: g.status === 'achieved' ? 'in_progress' : 'achieved' })}>{g.status === 'achieved' ? 'منجز' : 'تحت التدريب'}</button>
                       <span className="text-slate-500">نسبة الإنجاز الحالية:</span>
                       <div className="w-28 bg-slate-100 rounded-full h-3 overflow-hidden border border-slate-200">
                         <div
@@ -265,7 +265,6 @@ export const LongTermPlanView: React.FC<LongTermPlanViewProps> = ({
               {SCHOOL_KLICHE.specialistName}
             </span>
             <div className="h-0.5 w-40 mx-auto bg-emerald-700/40 my-2"></div>
-            <span className="text-[11px] text-slate-500 font-medium">التوقيع</span>
           </div>
         </div>
       </div>

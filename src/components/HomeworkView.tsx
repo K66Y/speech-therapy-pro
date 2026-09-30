@@ -231,7 +231,6 @@ export const HomeworkView: React.FC<HomeworkViewProps> = ({
               {SCHOOL_KLICHE.specialistName}
             </span>
             <div className="h-0.5 w-32 mx-auto bg-slate-300"></div>
-            <span className="text-[10px] text-slate-400">التوقيع</span>
           </div>
 
           <div className="space-y-3">
@@ -240,7 +239,6 @@ export const HomeworkView: React.FC<HomeworkViewProps> = ({
               {student.guardianName}
             </span>
             <div className="h-0.5 w-32 mx-auto bg-slate-300"></div>
-            <span className="text-[10px] text-slate-400">التوقيع</span>
           </div>
         </div>
       </div>

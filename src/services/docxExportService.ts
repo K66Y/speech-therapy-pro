@@ -249,8 +249,8 @@ export async function exportCaseStudyDocx(caseStudy: CaseStudyData) {
               children: [
                 createStyledCell('الصف / الفصل', 25, true),
                 createStyledCell(`${std.grade} - ${std.classRoom}`, 25),
-                createStyledCell('اسم ولي الأمر', 25, true),
-                createStyledCell(std.guardianName, 25)
+                createStyledCell('العمر التقديري', 25, true),
+                createStyledCell(std.age, 25)
               ]
             }),
             new TableRow({
@@ -378,7 +378,6 @@ export async function exportCaseStudyDocx(caseStudy: CaseStudyData) {
             children: [
               new TextRun({ text: 'أخصائي تدريبات نطق: ', font: 'Cairo', bold: true, size: 22, rightToLeft: true }),
               new TextRun({ text: SCHOOL_KLICHE.specialistName, font: 'Cairo', bold: true, size: 24, color: PRIMARY_COLOR, rightToLeft: true }),
-              new TextRun({ text: '             التوقيع: ____________________', font: 'Cairo', rightToLeft: true })
             ]
           })
         ]
@@ -485,7 +484,6 @@ export async function exportDiagnosisDocx(student: StudentProfile, assessment: D
             children: [
               new TextRun({ text: 'أخصائي تدريبات نطق: ', font: 'Cairo', bold: true, size: 22, rightToLeft: true }),
               new TextRun({ text: SCHOOL_KLICHE.specialistName, font: 'Cairo', bold: true, size: 24, color: PRIMARY_COLOR, rightToLeft: true }),
-              new TextRun({ text: '             التوقيع: ____________________', font: 'Cairo', rightToLeft: true })
             ]
           })
         ]
@@ -532,7 +530,8 @@ export async function exportPlansDocx(
           createStyledCell('الرمز والهدف العام', 20, true),
           createStyledCell('الصوت المستهدف', 15, true),
           createStyledCell('نص الهدف ومخرجات نهاية الفصل', 45, true),
-          createStyledCell('معيار التحقق', 20, true)
+          createStyledCell('معيار التحقق', 15, true),
+          createStyledCell('الحالة', 15, true)
         ]
       }),
       ...longTermPlan.goals.map(
@@ -541,8 +540,9 @@ export async function exportPlansDocx(
             children: [
               createStyledCell(g.code, 20, false, true),
               createStyledCell(`حرف [ ${g.targetLetter} ]`, 15, false, true, PRIMARY_COLOR),
-              createStyledCell(g.goalDescription, 45),
-              createStyledCell(g.successCriterion, 20)
+              createStyledCell(`${g.goalDescription}\nخط الأساس: ${g.startingBaseline}\nالناتج المتوقع: ${g.finalExpectedOutcome}\nمدة التنفيذ: ${g.targetPeriod}\nالتقييم: ${g.evaluationMethod}`, 45),
+              createStyledCell(g.successCriterion, 15),
+              createStyledCell(g.status === 'achieved' ? 'منجز' : 'تحت التدريب', 15, false, true, g.status === 'achieved' ? '059669' : 'B45309')
             ]
           })
       )
@@ -583,7 +583,6 @@ export async function exportPlansDocx(
       children: [
         new TextRun({ text: 'أخصائي تدريبات نطق: ', font: 'Cairo', bold: true, size: 22, rightToLeft: true }),
         new TextRun({ text: SCHOOL_KLICHE.specialistName, font: 'Cairo', bold: true, size: 24, color: PRIMARY_COLOR, rightToLeft: true }),
-        new TextRun({ text: '             التوقيع: ____________________', font: 'Cairo', rightToLeft: true })
       ]
     })
   ];
@@ -616,7 +615,8 @@ export async function exportPlansDocx(
           createStyledCell('م', 8, true),
           createStyledCell('المستوى الإجرائي', 22, true),
           createStyledCell('نص الهدف الإجرائي القصير', 40, true),
-          createStyledCell('تطبيق المرآة وخافض اللسان', 30, true)
+          createStyledCell('تطبيق المرآة وخافض اللسان', 22, true),
+          createStyledCell('الحالة', 8, true)
         ]
       }),
       ...shortTermPlan.objectives.map(
@@ -625,11 +625,12 @@ export async function exportPlansDocx(
             children: [
               createStyledCell(String(obj.stepNumber), 8, false, true),
               createStyledCell(printLevelLabel(obj.level), 22, false, true, PRIMARY_COLOR),
-              createStyledCell(obj.objectiveText, 40),
+              createStyledCell(`${obj.objectiveText}\nالحرف: ${obj.targetLetter} | الهدف: ${obj.successTargetPercentage}% | المحقق: ${obj.currentPercentage}%\nالفترة: ${obj.startDate} إلى ${obj.targetDate}${obj.notes ? `\nالملاحظة: ${obj.notes}` : ''}`, 40),
               createStyledCell(
                 `المرآة: ${obj.mirrorUsageDetails} | الخافض: ${obj.tongueDepressorDetails}`,
-                30
-              )
+                22
+              ),
+              createStyledCell(obj.status === 'achieved' ? 'منجز' : 'تحت التدريب', 8, false, true, obj.status === 'achieved' ? '059669' : 'B45309')
             ]
           })
       )
@@ -641,7 +642,7 @@ export async function exportPlansDocx(
       bidirectional: true,
       spacing: { before: 160, after: 80 },
       children: [
-        new TextRun({ text: 'المنهجية الإكلينيكية ومتطلبات الدعم الأسري المنزلي', font: 'Cairo', bold: true, color: PRIMARY_COLOR, size: 22, rightToLeft: true })
+        new TextRun({ text: 'المنهجية الإكلينيكية المتبعة', font: 'Cairo', bold: true, color: PRIMARY_COLOR, size: 22, rightToLeft: true })
       ]
     }),
     new Paragraph({
@@ -654,23 +655,12 @@ export async function exportPlansDocx(
       ]
     }),
     new Paragraph({
-      alignment: AlignmentType.RIGHT,
-      bidirectional: true,
-      spacing: { after: 120 },
-      children: [
-        new TextRun({ text: '• دور الأسرة بالمنزل: ', font: 'Cairo', bold: true, rightToLeft: true }),
-        new TextRun({ text: shortTermPlan.homeSupportRequirements, font: 'Cairo', rightToLeft: true })
-      ]
-    }),
-
-    new Paragraph({
       spacing: { before: 240 },
       alignment: AlignmentType.RIGHT,
       bidirectional: true,
       children: [
         new TextRun({ text: 'أخصائي تدريبات نطق: ', font: 'Cairo', bold: true, size: 22, rightToLeft: true }),
         new TextRun({ text: SCHOOL_KLICHE.specialistName, font: 'Cairo', bold: true, size: 24, color: PRIMARY_COLOR, rightToLeft: true }),
-        new TextRun({ text: '             توقيع ولي الأمر: ____________________', font: 'Cairo', rightToLeft: true })
       ]
     })
   ];
@@ -914,7 +904,7 @@ export async function exportHomeworkDocx(student: StudentProfile, homework: Home
             children: [
               new TextRun({ text: 'أخصائي تدريبات نطق: ', font: 'Cairo', bold: true, rightToLeft: true }),
               new TextRun({ text: SCHOOL_KLICHE.specialistName, font: 'Cairo', bold: true, color: PRIMARY_COLOR, rightToLeft: true }),
-              new TextRun({ text: '             توقيع ولي الأمر: ____________________', font: 'Cairo', rightToLeft: true })
+              new TextRun({ text: '             ولي الأمر: ____________________', font: 'Cairo', rightToLeft: true })
             ]
           })
         ]
@@ -1060,7 +1050,6 @@ export async function exportFinalReportDocx(student: StudentProfile, report: Fin
             children: [
               new TextRun({ text: 'أخصائي تدريبات نطق: ', font: 'Cairo', bold: true, size: 22, rightToLeft: true }),
               new TextRun({ text: SCHOOL_KLICHE.specialistName, font: 'Cairo', bold: true, size: 24, color: PRIMARY_COLOR, rightToLeft: true }),
-              new TextRun({ text: '             التوقيع: ____________________', font: 'Cairo', rightToLeft: true })
             ]
           })
         ]

@@ -69,7 +69,7 @@ export const ShortTermPlanView: React.FC<ShortTermPlanViewProps> = ({
   const toggleObjectiveStatus = (objId: string) => {
     const objective = data.objectives.find(item => item.id === objId);
     if (!objective) return;
-    const nextStatus = objective.status === 'achieved' ? 'in_progress' : objective.status === 'in_progress' ? 'pending' : 'achieved';
+    const nextStatus = objective.status === 'achieved' ? 'in_progress' : 'achieved';
     updateObjective(objId, { status: nextStatus });
   };
 
@@ -98,7 +98,7 @@ export const ShortTermPlanView: React.FC<ShortTermPlanViewProps> = ({
         currentPercentage: 0,
         startDate: getLiveHijriDate(),
         targetDate: getLiveHijriDate(),
-        status: 'pending' as const,
+        status: 'in_progress' as const,
         notes: ''
       }]
     };
@@ -180,7 +180,7 @@ export const ShortTermPlanView: React.FC<ShortTermPlanViewProps> = ({
             <div className="space-y-3.5">
               {data.objectives.filter(obj => obj.targetLetter === selectedLetter).map(obj => {
                 const isAchieved = obj.status === 'achieved';
-                const isInProgress = obj.status === 'in_progress';
+                const isInProgress = obj.status !== 'achieved';
 
                 return (
                   <div
@@ -211,18 +211,18 @@ export const ShortTermPlanView: React.FC<ShortTermPlanViewProps> = ({
                           <SavedField suffix="%" aria-label="نسبة الهدف" type="number" min="0" max="100" value={obj.successTargetPercentage} onChange={e => updateObjective(obj.id, { successTargetPercentage: Math.min(100, Math.max(0, Number(e.target.value) || 0)) })} className="w-14 rounded border border-slate-200 bg-white px-1 py-0.5 text-center font-bold text-slate-700 print:border-0" />
                           <span className="text-slate-400 mx-1">|</span>
                           <span className="text-slate-500 ml-1">المحقق:</span>
-                          <SavedField suffix="%" aria-label="نسبة الإنجاز" type="number" min="0" max="100" value={obj.currentPercentage} onChange={e => updateObjective(obj.id, { currentPercentage: Math.min(100, Math.max(0, Number(e.target.value) || 0)), status: Number(e.target.value) >= obj.successTargetPercentage ? 'achieved' : Number(e.target.value) > 0 ? 'in_progress' : 'pending' })} className="w-14 rounded border border-slate-200 bg-white px-1 py-0.5 text-center font-black text-emerald-800 print:border-0" />
+                          <SavedField suffix="%" aria-label="نسبة الإنجاز" type="number" min="0" max="100" value={obj.currentPercentage} onChange={e => updateObjective(obj.id, { currentPercentage: Math.min(100, Math.max(0, Number(e.target.value) || 0)), status: Number(e.target.value) >= obj.successTargetPercentage ? 'achieved' : 'in_progress' })} className="w-14 rounded border border-slate-200 bg-white px-1 py-0.5 text-center font-black text-emerald-800 print:border-0" />
                         </div>
 
-                      <span className="hidden print:block">{isAchieved ? 'منجز' : isInProgress ? 'تحت التدريب' : 'لم يسجل الإنجاز'}</span>
+                      <span className="hidden print:block">{isAchieved ? 'منجز' : 'تحت التدريب'}</span>
                       <button
                           onClick={() => toggleObjectiveStatus(obj.id)}
                           className={`text-xs px-2.5 py-1 rounded-md font-bold flex items-center gap-1 transition-all cursor-pointer ${
                             isAchieved
-                              ? 'bg-emerald-600 text-white'
+                              ? 'bg-slate-500 text-white'
                               : isInProgress
                               ? 'bg-amber-500 text-slate-900'
-                              : 'bg-slate-200 text-slate-600'
+                              : 'bg-amber-500 text-slate-900'
                           }`}
                         >
                           {isAchieved ? (
@@ -231,7 +231,7 @@ export const ShortTermPlanView: React.FC<ShortTermPlanViewProps> = ({
                               منجز
                             </>
                           ) : (
-                            <><Check className="w-3.5 h-3.5" />{isInProgress ? 'تحت التدريب' : 'تسجيل المنجز'}</>
+                            <><Check className="w-3.5 h-3.5" />تحت التدريب</>
                           )}
                         </button>
                       </div>
@@ -239,7 +239,7 @@ export const ShortTermPlanView: React.FC<ShortTermPlanViewProps> = ({
 
                     <div className="mb-3 grid grid-cols-1 md:grid-cols-3 gap-2">
                       <label className="text-[11px] font-bold text-slate-600">الحرف
-                        <SavedSelect value={obj.targetLetter} onChange={e => updateObjective(obj.id, { targetLetter: e.target.value as typeof obj.targetLetter })} className="mt-1 w-full rounded-lg border border-slate-200 bg-white p-2 text-sm font-black">
+                        <SavedSelect value={obj.targetLetter} onChange={e => { const targetLetter = e.target.value as typeof obj.targetLetter; const replace = (value: string) => value.split(obj.targetLetter).join(targetLetter); updateObjective(obj.id, { targetLetter, objectiveText: replace(obj.objectiveText), mirrorUsageDetails: replace(obj.mirrorUsageDetails), tongueDepressorDetails: replace(obj.tongueDepressorDetails) }); }} className="mt-1 w-full rounded-lg border border-slate-200 bg-white p-2 text-sm font-black">
                           {ARABIC_LETTERS_LIST.map(letter => <option key={letter} value={letter}>{letter}</option>)}
                         </SavedSelect>
                       </label>
@@ -284,40 +284,24 @@ export const ShortTermPlanView: React.FC<ShortTermPlanViewProps> = ({
           </div>
 
           {/* Methodology & Home Requirements */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50 border border-slate-200 rounded-xl p-4 text-xs mb-6">
+          <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 text-xs mb-6">
             <div>
               <span className="font-bold text-slate-800 block mb-1">
                 المنهجية الإكلينيكية المتبعة:
               </span>
               <EditableText label="المنهجية الإكلينيكية" value={data.clinicalMethodology} onSave={clinicalMethodology => { const updated = { ...data, clinicalMethodology }; setData(updated); onUpdatePlan(updated); }} rows={3} className="rounded-md border border-slate-200 bg-white p-2 text-slate-700" />
             </div>
-            <div>
-              <span className="font-bold text-slate-800 block mb-1">
-                متطلبات الدعم الأسري المنزلي:
-              </span>
-              <EditableText label="متطلبات الدعم الأسري" value={data.homeSupportRequirements} onSave={homeSupportRequirements => { const updated = { ...data, homeSupportRequirements }; setData(updated); onUpdatePlan(updated); }} rows={3} className="rounded-md border border-slate-200 bg-white p-2 text-slate-700" />
-            </div>
           </div>
         </div>
 
-        {/* Official Signatures Row (Specialist and Guardian) */}
-        <div className="pt-8 border-t border-slate-300 grid grid-cols-1 md:grid-cols-2 gap-6 text-xs text-center mt-6">
+        {/* Official Specialist Name */}
+        <div className="pt-8 border-t border-slate-300 flex justify-center text-xs text-center mt-6">
           <div className="space-y-3 bg-slate-50/80 p-4 rounded-xl border border-slate-200">
             <span className="text-slate-500 font-bold block">أخصائي تدريبات نطق</span>
             <span className="text-sm font-black text-emerald-900 block">
               {SCHOOL_KLICHE.specialistName}
             </span>
             <div className="h-0.5 w-32 mx-auto bg-slate-300"></div>
-            <span className="text-[10px] text-slate-400">التوقيع</span>
-          </div>
-
-          <div className="space-y-3 bg-slate-50/80 p-4 rounded-xl border border-slate-200">
-            <span className="text-slate-500 font-bold block">ولي أمر الطالب</span>
-            <span className="text-sm font-bold text-slate-800 block">
-              {student.guardianName}
-            </span>
-            <div className="h-0.5 w-32 mx-auto bg-slate-300"></div>
-            <span className="text-[10px] text-slate-400">التوقيع والمصادقة</span>
           </div>
         </div>
       </div>

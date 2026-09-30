@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import type { User } from 'firebase/auth';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { setDocumentHijriDate } from './services/dateService';
+import { AccountPasswordSetup } from './components/AccountPasswordSetup';
 import {
   BookOpen,
   ClipboardList,
@@ -224,8 +225,6 @@ function WorkspaceApp({ user }: { user: User | null }) {
     return () => window.clearTimeout(timer);
   }, [user?.uid, isHydrated, students, caseStudies, assessments, longTermPlans, shortTermPlans, dailySessions, homeworkList, finalReports]);
 
-  if (!isHydrated && syncStatus !== 'error') return <div dir="rtl" className="min-h-screen bg-slate-950 text-white grid place-items-center font-bold">جارٍ تحميل سجلاتك المحفوظة...</div>;
-
   const currentStudent = students.find(s => s.id === activeStudentId) || students[0];
   const currentCaseStudy = caseStudies[activeStudentId] || caseStudies['std-001'];
   const currentAssessment = assessments[activeStudentId] || assessments['std-001'];
@@ -234,6 +233,38 @@ function WorkspaceApp({ user }: { user: User | null }) {
   const currentSessions = dailySessions[activeStudentId] || dailySessions['std-001'] || [];
   const currentHwList = homeworkList[activeStudentId] || homeworkList['std-001'] || [];
   const currentFinalReport = finalReports[activeStudentId] || finalReports['std-001'];
+
+  // Keep each selected target letter represented in both plans without replacing saved work.
+  useEffect(() => {
+    const targets = currentStudent?.targetLetters || [];
+    if (!targets.length) return;
+    setLongTermPlans(previous => {
+      const plan = previous[activeStudentId];
+      if (!plan) return previous;
+      const missing = targets.filter(letter => !plan.goals.some(goal => goal.targetLetter === letter));
+      if (!missing.length) return previous;
+      const template = plan.goals[0];
+      const additions = missing.map((letter, index) => {
+        const replace = (value = '') => value.split(template?.targetLetter || letter).join(letter);
+        return { ...template, id: `ltg-${activeStudentId}-${letter}-${Date.now()}-${index}`, code: `هدف عام ${plan.goals.length + index + 1}`, targetLetter: letter, goalDescription: replace(template?.goalDescription), startingBaseline: replace(template?.startingBaseline), finalExpectedOutcome: replace(template?.finalExpectedOutcome), status: 'in_progress' as const, progressPercentage: 0 };
+      });
+      return { ...previous, [activeStudentId]: { ...plan, goals: [...plan.goals, ...additions] } };
+    });
+    setShortTermPlans(previous => {
+      const plan = previous[activeStudentId];
+      if (!plan) return previous;
+      const missing = targets.filter(letter => !plan.objectives.some(objective => objective.targetLetter === letter));
+      if (!missing.length && targets.every(letter => plan.targetLetters?.includes(letter))) return previous;
+      const template = plan.objectives[0];
+      const additions = missing.map((letter, index) => {
+        const replace = (value = '') => value.split(template?.targetLetter || letter).join(letter);
+        return { ...template, id: `sto-${activeStudentId}-${letter}-${Date.now()}-${index}`, stepNumber: 1, targetLetter: letter, objectiveText: replace(template?.objectiveText), mirrorUsageDetails: replace(template?.mirrorUsageDetails), tongueDepressorDetails: replace(template?.tongueDepressorDetails), status: 'in_progress' as const, currentPercentage: 0 };
+      });
+      return { ...previous, [activeStudentId]: { ...plan, targetLetter: targets[0], targetLetters: targets, objectives: [...plan.objectives, ...additions] } };
+    });
+  }, [activeStudentId, currentStudent?.targetLetters?.join('،')]);
+
+  if (!isHydrated && syncStatus !== 'error') return <div dir="rtl" className="min-h-screen bg-slate-950 text-white grid place-items-center font-bold">جارٍ تحميل سجلاتك المحفوظة...</div>;
 
   // Handle adding a new student
   const handleAddNewStudent = (newStudent: StudentProfile, targetLetters: ArabicLetterKey[]) => {
@@ -296,7 +327,7 @@ function WorkspaceApp({ user }: { user: User | null }) {
         <div className="max-w-7xl mx-auto px-4 py-3 sm:px-6">
           <div className="flex flex-col gap-4">
             {/* Title & Specialist */}
-            <div className="flex min-h-12 items-center gap-3.5 pl-44">
+            <div className="flex min-h-12 items-center gap-3.5 pl-32 sm:pl-44">
               <div>
                 <h1 className="text-base sm:text-lg font-black tracking-wide text-white">
                   منظومة تدريبات النطق
@@ -308,15 +339,15 @@ function WorkspaceApp({ user }: { user: User | null }) {
             </div>
 
             {/* Student Switcher, Registration & Actions */}
-            <div className="flex items-center gap-2.5 flex-wrap">
+            <div className="grid grid-cols-1 gap-2.5 sm:flex sm:items-center sm:flex-wrap">
               {/* Active Student Picker */}
-              <div className="bg-sky-900/90 border border-sky-700/80 rounded-xl p-1 flex items-center gap-2 text-xs shadow-xs">
+              <div className="min-w-0 bg-sky-900/90 border border-sky-700/80 rounded-xl p-1 flex items-center gap-1 sm:gap-2 text-xs shadow-xs">
                 <Users className="w-4 h-4 text-sky-300 mr-2 shrink-0" />
                 <span className="text-sky-200 font-bold hidden sm:inline">الطالب:</span>
                 <select
                   value={activeStudentId}
                   onChange={e => setActiveStudentId(e.target.value)}
-                  className="bg-sky-800 text-white font-bold text-xs rounded-lg px-2.5 py-1.5 focus:outline-hidden border border-sky-600 cursor-pointer"
+                  className="min-w-0 flex-1 bg-sky-800 text-white font-bold text-xs rounded-lg px-2.5 py-1.5 focus:outline-hidden border border-sky-600 cursor-pointer sm:flex-none"
                 >
                   {currentStudent?.deletedAt && <option value={activeStudentId}>اختر طالباً أو استرجع طالباً محذوفاً</option>}
                   {students.filter(s => !s.deletedAt).map(s => (
@@ -345,7 +376,7 @@ function WorkspaceApp({ user }: { user: User | null }) {
               {students.some(student => student.deletedAt) && <details className="rounded-xl bg-white p-2 text-xs text-sky-900"><summary>الطلاب المحذوفون — استرجاع</summary>{students.filter(student => student.deletedAt).map(student => <button key={student.id} type="button" className="block p-2 underline" onClick={() => { setStudents(previous => previous.map(item => item.id === student.id ? { ...item, deletedAt: null } : item)); setActiveStudentId(student.id); }}>استرجاع {student.fullName}</button>)}</details>}
               <button
                 onClick={() => setIsNewStudentModalOpen(true)}
-                className="flex items-center gap-1.5 bg-sky-600 hover:bg-sky-500 text-white font-black text-xs px-3 py-2 rounded-xl shadow-xs transition-all active:scale-95 cursor-pointer"
+                className="flex w-full sm:w-auto items-center justify-center gap-1.5 bg-sky-600 hover:bg-sky-500 text-white font-black text-xs px-3 py-2 rounded-xl shadow-xs transition-all active:scale-95 cursor-pointer"
                 title="تسجيل طالب جديد في برنامج تدريبات النطق"
               >
                 <UserPlus className="w-4 h-4" />
@@ -374,6 +405,8 @@ function WorkspaceApp({ user }: { user: User | null }) {
                       <span>تنزيل نسخة احتياطية</span>
                     </button>
 
+                    {user && <AccountPasswordSetup user={user} />}
+
                     {user && <button onClick={async () => { if (!auth || !isHydrated) return; setSyncStatus('saving'); try { await saveWorkspace(user.uid, { students, caseStudies, assessments, longTermPlans, shortTermPlans, dailySessions, homeworkList, finalReports }); if (db) await waitForPendingWrites(db); await signOut(auth); } catch { setSyncStatus('error'); window.alert('لم يكتمل حفظ آخر التعديلات. لم نسجل خروجك لحماية بياناتك؛ تحقق من الاتصال وأعد المحاولة.'); } }} className="w-full flex items-center gap-2 rounded-xl px-3 py-2.5 text-xs font-black text-red-700 hover:bg-red-50">
                       <LogOut className="w-4 h-4" />
                       <span>تسجيل الخروج</span>
@@ -385,7 +418,7 @@ function WorkspaceApp({ user }: { user: User | null }) {
               <div className="relative">
                 <button
                   onClick={() => setIsExportMenuOpen(!isExportMenuOpen)}
-                  className="flex items-center gap-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs px-3.5 py-2 rounded-xl shadow-md transition-all active:scale-95 cursor-pointer"
+                  className="flex w-full sm:w-auto items-center justify-center gap-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs px-3.5 py-2 rounded-xl shadow-md transition-all active:scale-95 cursor-pointer"
                 >
                   <FileDown className="w-4 h-4" />
                   <span>تصدير مستند وورد (.docx)</span>
@@ -499,15 +532,15 @@ function WorkspaceApp({ user }: { user: User | null }) {
             </div>
           </div>
         </div>
-        <div className="fixed left-3 top-3 z-[80] print:hidden">
+        <div className="fixed left-2 top-2 sm:left-3 sm:top-3 z-[80] print:hidden">
           <button
             onClick={() => setIsAccountMenuOpen(open => !open)}
-            className="flex items-center gap-2 rounded-full border border-white/20 bg-white/95 px-2.5 py-1.5 text-sky-950 shadow-lg hover:bg-white"
+            className="flex items-center gap-1 sm:gap-2 rounded-full border border-white/20 bg-white/95 px-1.5 sm:px-2.5 py-1.5 text-sky-950 shadow-lg hover:bg-white"
             title="الحساب والنسخة الاحتياطية"
             aria-expanded={isAccountMenuOpen}
           >
             <span className="grid h-9 w-9 place-items-center rounded-full bg-emerald-50 text-emerald-800"><UserCircle className="h-6 w-6" /></span>
-            <span className="max-w-28 text-left leading-tight" dir="ltr">
+            <span className="hidden sm:block max-w-28 text-left leading-tight" dir="ltr">
               <span className="block truncate text-xs font-black">{user?.displayName || user?.email?.split('@')[0] || 'الحساب'}</span>
               <span className="block text-[10px] font-semibold text-slate-500">{syncStatus === 'saved' ? 'محفوظ' : syncStatus === 'saving' ? 'جارٍ الحفظ' : 'الحساب'}</span>
             </span>
@@ -518,7 +551,7 @@ function WorkspaceApp({ user }: { user: User | null }) {
 
       {/* Navigation Sub-Header (Tabs) */}
       <nav className="bg-white/95 backdrop-blur-xs border-b border-sky-100 sticky top-0 z-40 shadow-xs print:hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+        <div className="max-w-7xl mx-auto px-2 sm:px-6">
           <div className="flex items-center gap-1.5 overflow-x-auto py-2.5 scrollbar-thin">
             {navTabs.map(tab => {
               const Icon = tab.icon;
@@ -528,7 +561,7 @@ function WorkspaceApp({ user }: { user: User | null }) {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id as ActiveTab)}
-                  className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer shrink-0 ${
+                  className={`flex items-center gap-1.5 px-2.5 sm:px-3.5 py-2 rounded-xl text-[11px] sm:text-xs font-bold whitespace-nowrap transition-all cursor-pointer shrink-0 ${
                     isActive
                       ? 'bg-sky-800 text-white shadow-md'
                       : 'text-slate-600 hover:bg-sky-50 hover:text-sky-900'
@@ -544,7 +577,7 @@ function WorkspaceApp({ user }: { user: User | null }) {
       </nav>
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-2 sm:px-6 py-4 sm:py-8 overflow-x-hidden">
         {currentStudent?.deletedAt && activeTab !== 'letters' ? <p className="rounded-xl bg-white p-6">الطالب في المحذوفين. استرجعه من القائمة أعلاه أو سجل طالباً جديداً لعرض النماذج.</p> : <>
         {activeTab === 'letters' && <LettersDirectory />}
 

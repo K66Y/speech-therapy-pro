@@ -320,7 +320,6 @@ export const DailySessionView: React.FC<DailySessionViewProps> = ({
               {SCHOOL_KLICHE.specialistName}
             </span>
             <div className="h-0.5 w-40 mx-auto bg-emerald-700/40 my-2"></div>
-            <span className="text-[11px] text-slate-500 font-medium">التوقيع</span>
           </div>
         </div>
       </div>
