@@ -52,6 +52,8 @@ export const ShortTermPlanView: React.FC<ShortTermPlanViewProps> = ({
   isExportingDocx
 }) => {
   const [data, setData] = useState<ShortTermPlan>(plan);
+  const [addedObjectiveId, setAddedObjectiveId] = useState('');
+  useEffect(() => { if (addedObjectiveId) document.getElementById(addedObjectiveId)?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, [addedObjectiveId]);
   const [selectedLetter, setSelectedLetter] = useState<ArabicLetterKey>(plan.targetLetters?.[0] || plan.targetLetter);
 
   useEffect(() => {
@@ -83,11 +85,12 @@ export const ShortTermPlanView: React.FC<ShortTermPlanViewProps> = ({
 
   const addObjective = () => {
     const letter = selectedLetter || (data.targetLetters || [data.targetLetter])[0] || data.targetLetter;
+    const id = `sto-${crypto.randomUUID()}`;
     const updated = {
       ...data,
       objectives: [...data.objectives, {
-        id: `sto-${student.id}-${Date.now()}`,
-        stepNumber: data.objectives.filter(objective => objective.targetLetter === letter).length + 1,
+        id,
+        stepNumber: Math.max(0, ...data.objectives.filter(objective => objective.targetLetter === letter).map(objective => objective.stepNumber)) + 1,
         objectiveText: `أن ينطق الطالب حرف (${letter}) في المستوى التدريبي المحدد.`,
         targetLetter: letter,
         level: 'حرف منفرد',
@@ -104,6 +107,8 @@ export const ShortTermPlanView: React.FC<ShortTermPlanViewProps> = ({
     };
     setData(updated);
     onUpdatePlan(updated);
+    setSelectedLetter(letter);
+    setAddedObjectiveId(id);
   };
 
   return (
@@ -172,7 +177,8 @@ export const ShortTermPlanView: React.FC<ShortTermPlanViewProps> = ({
             </h3>
 
             <div className="flex justify-start mb-3 print:hidden">
-              <button onClick={addObjective} className="inline-flex items-center gap-1.5 rounded-lg bg-teal-800 px-3 py-2 text-xs font-bold text-white"><Plus className="h-4 w-4"/>إضافة هدف ومستوى</button>
+              <button type="button" onClick={addObjective} className="inline-flex items-center gap-1.5 rounded-lg bg-teal-800 px-3 py-2 text-xs font-bold text-white"><Plus className="h-4 w-4"/>إضافة هدف ومستوى</button>
+              {addedObjectiveId && <span role="status" className="text-sm text-emerald-800 print:hidden">تمت إضافة الهدف، ويمكنك اختيار تفاصيله الآن.</span>}
             </div>
             <div className="space-y-3.5">
               {data.objectives.filter(obj => obj.targetLetter === selectedLetter).map(obj => {
@@ -182,6 +188,7 @@ export const ShortTermPlanView: React.FC<ShortTermPlanViewProps> = ({
                 return (
                   <div
                     key={obj.id}
+                    id={obj.id}
                     className={`border-2 rounded-xl p-4 transition-all ${
                       isAchieved
                         ? 'border-emerald-200 bg-emerald-50/40'
@@ -210,7 +217,7 @@ export const ShortTermPlanView: React.FC<ShortTermPlanViewProps> = ({
                           <SavedField aria-label="نسبة الإنجاز" type="number" min="0" max="100" value={obj.currentPercentage} onChange={e => updateObjective(obj.id, { currentPercentage: Math.min(100, Math.max(0, Number(e.target.value) || 0)), status: Number(e.target.value) >= obj.successTargetPercentage ? 'achieved' : Number(e.target.value) > 0 ? 'in_progress' : 'pending' })} className="w-14 rounded border border-slate-200 bg-white px-1 py-0.5 text-center font-black text-emerald-800 print:border-0" />%
                         </div>
 
-                      <span className="hidden print:inline">{isAchieved ? 'منجز' : isInProgress ? 'قيد التدريب' : 'لم يبدأ'}</span>
+                      <SavedSelect aria-label="حالة الهدف قصير المدى" value={obj.status} onChange={e => updateObjective(obj.id, { status: e.target.value as 'pending' | 'in_progress' | 'achieved' })}><option value="pending">لم يبدأ</option><option value="in_progress">تحت التدريب</option><option value="achieved">منجز</option></SavedSelect>
                       <button
                           onClick={() => toggleObjectiveStatus(obj.id)}
                           className={`text-xs px-2.5 py-1 rounded-md font-bold flex items-center gap-1 transition-all cursor-pointer ${

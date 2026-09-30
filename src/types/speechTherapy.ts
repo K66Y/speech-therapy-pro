@@ -146,6 +146,7 @@ export interface DiagnosticAssessment {
 }
 
 export interface LongTermPlanGoal {
+  status?: 'pending' | 'in_progress' | 'achieved';
   id: string;
   code: string; // مثال: هدف عام ١
   targetLetter: ArabicLetterKey;

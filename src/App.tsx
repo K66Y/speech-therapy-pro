@@ -537,7 +537,7 @@ function WorkspaceApp({ user }: { user: User | null }) {
 
         {/* Long Term Plan: Standalone Page */}
         {activeTab === 'longterm' && (
-          <LongTermPlanView
+          <LongTermPlanView key={activeStudentId}
             student={currentStudent}
             plan={currentLTPlan}
             onUpdatePlan={updated =>

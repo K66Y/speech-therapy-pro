@@ -32,6 +32,9 @@ export const LongTermPlanView: React.FC<LongTermPlanViewProps> = ({
   isExportingDocx
 }) => {
   const [data, setData] = useState<LongTermPlan>(plan);
+  const [addedGoalId, setAddedGoalId] = useState('');
+  const [newGoalLetter, setNewGoalLetter] = useState<ArabicLetterKey>(student.targetLetters?.[0] || plan.goals[0]?.targetLetter || 'ر');
+  useEffect(() => { if (addedGoalId) document.getElementById(addedGoalId)?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, [addedGoalId]);
   useEffect(() => setData(plan), [plan]);
   const updateGoal = (goalId: string, changes: Partial<LongTermPlan['goals'][number]>) => {
     const updated = { ...data, goals: data.goals.map(goal => goal.id === goalId ? { ...goal, ...changes } : goal) };
@@ -46,12 +49,14 @@ export const LongTermPlanView: React.FC<LongTermPlanViewProps> = ({
     onUpdatePlan(updated);
   };
   const addGoal = () => {
-    const letter = student.targetLetters?.[0] || data.goals[0]?.targetLetter || 'ر';
+    const letter = newGoalLetter;
     const first = data.goals[0];
     const newGoal = { ...(first || {}), id: `ltg-${student.id}-${Date.now()}`, code: `هدف عام ${data.goals.length + 1}`, targetLetter: letter, goalDescription: `أن ينطق الطالب صوت حرف (${letter}) في مواضعه المختلفة وفق معيار الإتقان المحدد.`, successCriterion: first?.successCriterion || '', targetPeriod: first?.targetPeriod || 'فصل دراسي', startingBaseline: '', finalExpectedOutcome: '', evaluationMethod: first?.evaluationMethod || '', progressPercentage: 0 };
-    const updated = { ...data, goals: [...data.goals, newGoal] };
+    newGoal.id = `ltg-${crypto.randomUUID()}`;
+    const updated = { ...data, goals: [...data.goals, { ...newGoal, status: 'pending' as const }] };
     setData(updated);
     onUpdatePlan(updated);
+    setAddedGoalId(newGoal.id);
   };
   const addStrategy = () => {
     const updated = { ...data, generalStrategies: [...data.generalStrategies, ''] };
@@ -123,10 +128,11 @@ export const LongTermPlanView: React.FC<LongTermPlanViewProps> = ({
             </h3>
 
             <div className="space-y-4">
-              <button onClick={addGoal} className="text-xs rounded-lg bg-emerald-800 px-3 py-2 font-bold text-white print:hidden">إضافة هدف لحرف مستهدف</button>
+              <div className="flex flex-wrap items-center gap-3 print:hidden"><label className="text-sm">حرف الهدف الجديد <select aria-label="حرف الهدف الجديد" value={newGoalLetter} onChange={e => setNewGoalLetter(e.target.value as ArabicLetterKey)} className="rounded-lg border p-2">{ARABIC_LETTERS_LIST.map(letter => <option key={letter}>{letter}</option>)}</select></label><button type="button" onClick={addGoal} className="text-xs rounded-lg bg-emerald-800 px-3 py-2 font-bold text-white print:hidden">إضافة هدف لحرف مستهدف</button>{addedGoalId && <span role="status" className="text-sm text-emerald-800">تمت إضافة الهدف، ويمكنك اختيار تفاصيله الآن.</span>}</div>
               {data.goals.map((g, index) => (
                 <div
                   key={g.id}
+                  id={g.id}
                   className="bg-white border-2 border-emerald-900/20 rounded-xl p-5 shadow-xs space-y-3"
                 >
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200/80 pb-2.5">
@@ -142,6 +148,7 @@ export const LongTermPlanView: React.FC<LongTermPlanViewProps> = ({
                     </div>
 
                     <div className="flex items-center gap-2 text-xs">
+                      <SavedSelect aria-label="حالة الهدف طويل المدى" value={g.status || (g.progressPercentage > 0 ? 'in_progress' : 'pending')} onChange={e => updateGoal(g.id, { status: e.target.value as 'pending' | 'in_progress' | 'achieved' })}><option value="pending">لم يبدأ</option><option value="in_progress">تحت التدريب</option><option value="achieved">منجز</option></SavedSelect>
                       <span className="text-slate-500">نسبة الإنجاز الحالية:</span>
                       <div className="w-28 bg-slate-100 rounded-full h-3 overflow-hidden border border-slate-200">
                         <div
