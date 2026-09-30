@@ -158,7 +158,7 @@ export const LongTermPlanView: React.FC<LongTermPlanViewProps> = ({
                           style={{ width: `${g.progressPercentage}%` }}
                         ></div>
                       </div>
-                      <SavedField aria-label="نسبة الإنجاز" type="number" min="0" max="100" value={g.progressPercentage} onChange={e => updateGoal(g.id, { progressPercentage: Math.min(100, Math.max(0, Number(e.target.value) || 0)) })} className="w-14 rounded border border-slate-200 px-1 text-center font-bold text-emerald-800 print:border-0" />%
+                      <SavedField suffix="%" aria-label="نسبة الإنجاز" type="number" min="0" max="100" value={g.progressPercentage} onChange={e => updateGoal(g.id, { progressPercentage: Math.min(100, Math.max(0, Number(e.target.value) || 0)) })} className="w-14 rounded border border-slate-200 px-1 text-center font-bold text-emerald-800 print:border-0" />
                     </div>
                   </div>
 

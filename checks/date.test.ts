@@ -15,5 +15,5 @@ test('invalid dates never become a fabricated Hijri date', () => {
 });
 test('Arabic and Persian digits and terminology use the requested presentation', () => {
   assert.equal(normalizeDigits('٠١٢٣٤٥٦٧٨٩۰۱۲۳۴۵۶۷۸۹'), '01234567890123456789');
-  assert.equal(displayText('٨٨٪ ارتداد الفونيم التوقيع بالعلم'), '88% انتكاس الصوتي التوقيع');
+  assert.equal(displayText('٨٨٪ ارتداد الفونيم التوقيع بالعلم'), '\u206688%\u2069 انتكاس الصوتي التوقيع');
 });

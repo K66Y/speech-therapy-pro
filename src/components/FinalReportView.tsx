@@ -175,14 +175,14 @@ export const FinalReportView: React.FC<FinalReportViewProps> = ({
                       <SavedSelect aria-label="حرف مستهدف" value={p.letter} onChange={e => updateLetter(idx, { letter: e.target.value as typeof p.letter })} className="bg-transparent font-black text-emerald-900 print:hidden">{availableLetters.map(letter => <option key={letter}>{letter}</option>)}</SavedSelect>
                     </td>
                     <td className="p-3 text-rose-700 font-bold border border-slate-200">
-                      <SavedField aria-label="نسبة البداية" type="number" min="0" max="100" value={p.beforeRate} onChange={e => updateLetter(idx, { beforeRate: Math.min(100, Math.max(0, Number(e.target.value) || 0)) })} className="w-14 bg-transparent text-center font-bold text-rose-700 print:border-0" />%
+                      <SavedField suffix="%" aria-label="نسبة البداية" type="number" min="0" max="100" value={p.beforeRate} onChange={e => updateLetter(idx, { beforeRate: Math.min(100, Math.max(0, Number(e.target.value) || 0)) })} className="w-14 bg-transparent text-center font-bold text-rose-700 print:border-0" />
                     </td>
                     <td className="p-3 text-emerald-800 font-black text-base border border-slate-200">
-                      <SavedField aria-label="نسبة الإغلاق" type="number" min="0" max="100" value={p.afterRate} onChange={e => updateLetter(idx, { afterRate: Math.min(100, Math.max(0, Number(e.target.value) || 0)) })} className="w-14 bg-transparent text-center font-black text-emerald-800 print:border-0" />%
+                      <SavedField suffix="%" aria-label="نسبة الإغلاق" type="number" min="0" max="100" value={p.afterRate} onChange={e => updateLetter(idx, { afterRate: Math.min(100, Math.max(0, Number(e.target.value) || 0)) })} className="w-14 bg-transparent text-center font-black text-emerald-800 print:border-0" />
                     </td>
                     <td className="p-3 border border-slate-200">
                       <span className="inline-block px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-900 font-bold">
-                        {p.afterRate >= p.beforeRate ? '+' : ''}{p.afterRate - p.beforeRate}% {p.afterRate >= p.beforeRate ? 'تحسن' : 'انتكاس'}
+                        <bdi dir="ltr" className="whitespace-nowrap">{p.afterRate >= p.beforeRate ? '+' : ''}{p.afterRate - p.beforeRate}%</bdi> {p.afterRate >= p.beforeRate ? 'تحسن' : 'انتكاس'}
                       </span>
                     </td>
                     <td className="p-3 font-bold text-emerald-800 border border-slate-200">

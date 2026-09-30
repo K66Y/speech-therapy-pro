@@ -16,14 +16,15 @@ interface Props {
   placeholder?: string;
   targetLetter?: string;
   suggestions?: string[];
+  suffix?: string;
 }
 
 /** Adapts existing form callbacks to explicit, validated save/cancel editing. */
-export function SavedField({ value, onChange, multiline = false, rows, className = '', type, min, max, readOnly, targetLetter, suggestions, ...props }: Props) {
+export function SavedField({ value, onChange, multiline = false, rows, className = '', type, min, max, readOnly, targetLetter, suggestions, suffix, ...props }: Props) {
   const label = props['aria-label'] || props.placeholder || 'التفاصيل';
   const text = normalizeDigits(String(value ?? ''));
   if (readOnly) return <span>{text}</span>;
-  return <EditableText label={label} value={text} multiline={multiline} rows={rows}
+  return <EditableText label={label} value={text} multiline={multiline} rows={rows} suffix={suffix}
     targetLetter={targetLetter} suggestions={suggestions ?? (type === 'number' ? Array.from({length: Math.min(1000, Number(max ?? 100) - Number(min ?? 0) + 1)}, (_, index) => String(Number(min ?? 0) + index)) : undefined)}
     className={`${type === 'number' ? 'inline-block align-middle min-w-20' : ''} ${className.replace(/\bprint:hidden\b/g, '')}`}
     onSave={next => onChange?.({ target: { value: normalizeDigits(next) } })}

@@ -15,11 +15,12 @@ interface EditableTextProps {
   suggestions?: string[];
   targetLetter?: string;
   validate?: (value: string) => string | undefined;
+  suffix?: string;
 }
 
 /** A compact, explicit edit/save control that keeps the normal document appearance. */
 export const EditableText: React.FC<EditableTextProps> = ({
-  label, value, onSave, multiline = true, rows = 3, onDelete = () => onSave(''), className = '', suggestions, validate, targetLetter
+  label, value, onSave, multiline = true, rows = 3, onDelete = () => onSave(''), className = '', suggestions, validate, targetLetter, suffix
 }) => {
   const isDate = /تاريخ/.test(label);
   value = isDate ? formatHijriDate(value) : displayBodyText(value);
@@ -48,7 +49,7 @@ export const EditableText: React.FC<EditableTextProps> = ({
   };
 
   return (
-    <div data-print-value={value} className={`group relative min-w-0 ${className}`}>
+    <div data-print-value={suffix ? `\u2066${value}${suffix}\u2069` : value} className={`group relative min-w-0 ${className}`}>
       {editing ? (
         <div className="space-y-2 print:hidden">
           {error && <p role="alert" className="text-xs text-rose-700">{error}</p>}
@@ -66,7 +67,7 @@ export const EditableText: React.FC<EditableTextProps> = ({
         </div>
       ) : (
         <div className="flex items-start gap-2">
-          <div className="min-w-0 flex-1 whitespace-pre-wrap leading-relaxed print:text-black">{value || <span className="text-slate-400">—</span>}</div>
+          <div className="min-w-0 flex-1 whitespace-pre-wrap leading-relaxed print:text-black">{suffix ? <bdi dir="ltr" style={{ whiteSpace: 'nowrap' }}>{value}{suffix}</bdi> : value || <span className="text-slate-400">—</span>}</div>
           <button type="button" onClick={() => { setDraft(value); setCustomizing(false); setAppendChoice(false); setError(''); setEditing(true); }} aria-label={`تعديل ${label}`} title={`تعديل ${label}`} className="shrink-0 rounded-md p-1 text-slate-400 opacity-60 transition hover:bg-sky-50 hover:text-sky-800 group-hover:opacity-100 print:hidden"><Pencil className="h-3.5 w-3.5" /></button>
           {saved && <span role="status" className="shrink-0 text-[10px] font-bold text-emerald-700 print:hidden">تم اعتماد التعديل</span>}
         </div>

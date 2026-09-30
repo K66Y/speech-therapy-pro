@@ -246,7 +246,7 @@ export const DailySessionView: React.FC<DailySessionViewProps> = ({
                     استجابة الطالب: <SavedSelect aria-label="استجابة الطالب" value={s.studentResponse} onChange={e => onUpdateSession({ ...s, studentResponse: e.target.value as typeof s.studentResponse })}>{['ممتاز ومتحمس','جيد جداً مع تحسن','متوسط يحتاج تكرار','مقاوم أو مشتت'].map(response => <option key={response}>{response}</option>)}</SavedSelect>
                   </span>
                   <span className="text-xs font-black text-white bg-emerald-700 px-3 py-1 rounded-md shadow-xs">
-                    دقة الأداء: <SavedField aria-label="دقة الأداء" type="number" min={0} max={100} value={s.accuracyRate} onChange={e => onUpdateSession({ ...s, accuracyRate: Number(e.target.value) })} />%
+                    دقة الأداء: <SavedField suffix="%" aria-label="دقة الأداء" type="number" min={0} max={100} value={s.accuracyRate} onChange={e => onUpdateSession({ ...s, accuracyRate: Number(e.target.value) })} />
                   </span>
                 </div>
               </div>

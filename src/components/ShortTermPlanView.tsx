@@ -208,10 +208,10 @@ export const ShortTermPlanView: React.FC<ShortTermPlanViewProps> = ({
                       <div className="flex items-center gap-3">
                         <div className="flex flex-wrap items-center gap-1 text-xs">
                           <span className="text-slate-500 ml-1">الهدف:</span>
-                          <SavedField aria-label="نسبة الهدف" type="number" min="0" max="100" value={obj.successTargetPercentage} onChange={e => updateObjective(obj.id, { successTargetPercentage: Math.min(100, Math.max(0, Number(e.target.value) || 0)) })} className="w-14 rounded border border-slate-200 bg-white px-1 py-0.5 text-center font-bold text-slate-700 print:border-0" />%
+                          <SavedField suffix="%" aria-label="نسبة الهدف" type="number" min="0" max="100" value={obj.successTargetPercentage} onChange={e => updateObjective(obj.id, { successTargetPercentage: Math.min(100, Math.max(0, Number(e.target.value) || 0)) })} className="w-14 rounded border border-slate-200 bg-white px-1 py-0.5 text-center font-bold text-slate-700 print:border-0" />
                           <span className="text-slate-400 mx-1">|</span>
                           <span className="text-slate-500 ml-1">المحقق:</span>
-                          <SavedField aria-label="نسبة الإنجاز" type="number" min="0" max="100" value={obj.currentPercentage} onChange={e => updateObjective(obj.id, { currentPercentage: Math.min(100, Math.max(0, Number(e.target.value) || 0)), status: Number(e.target.value) >= obj.successTargetPercentage ? 'achieved' : Number(e.target.value) > 0 ? 'in_progress' : 'pending' })} className="w-14 rounded border border-slate-200 bg-white px-1 py-0.5 text-center font-black text-emerald-800 print:border-0" />%
+                          <SavedField suffix="%" aria-label="نسبة الإنجاز" type="number" min="0" max="100" value={obj.currentPercentage} onChange={e => updateObjective(obj.id, { currentPercentage: Math.min(100, Math.max(0, Number(e.target.value) || 0)), status: Number(e.target.value) >= obj.successTargetPercentage ? 'achieved' : Number(e.target.value) > 0 ? 'in_progress' : 'pending' })} className="w-14 rounded border border-slate-200 bg-white px-1 py-0.5 text-center font-black text-emerald-800 print:border-0" />
                         </div>
 
                       <span className="hidden print:block">{isAchieved ? 'منجز' : isInProgress ? 'تحت التدريب' : 'لم يسجل الإنجاز'}</span>

@@ -407,6 +407,7 @@ export const DiagnosisView: React.FC<DiagnosisViewProps> = ({
                 {isManualScoreMode ? (
                   <div className="flex items-center gap-1.5 mt-1">
                     <SavedField
+                      suffix="%"
                       type="number"
                       min={0}
                       max={100}
@@ -418,12 +419,11 @@ export const DiagnosisView: React.FC<DiagnosisViewProps> = ({
                       }}
                       className="w-20 p-1.5 text-2xl font-black text-sky-950 bg-white border border-sky-300 rounded-lg text-center"
                     />
-                    <span className="text-xl font-black text-sky-900">%</span>
                   </div>
                 ) : (
-                  <span className="text-3xl font-black text-sky-950">
+                  <bdi dir="ltr" className="text-3xl font-black text-sky-950 whitespace-nowrap">
                     {currentScore}%
-                  </span>
+                  </bdi>
                 )}
               </div>
               <Sparkles className="w-8 h-8 text-sky-600 opacity-60" />
