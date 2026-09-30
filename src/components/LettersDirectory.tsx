@@ -301,7 +301,7 @@ export const LettersDirectory: React.FC = () => {
                 </span>
               </div>
               <div className="text-xs text-slate-600 max-w-xl font-medium">
-                <EditableText label="وصف المخرج" value={currentLetter.articulationType} onSave={value => updateLetterDetails({ articulationType: value })} />
+                <EditableText suggestions={Object.values(ARABIC_LETTERS_MAP).map(info => info.articulationType)} label="وصف المخرج" value={currentLetter.articulationType} onSave={value => updateLetterDetails({ articulationType: value })} />
               </div>
             </div>
           </div>
@@ -323,7 +323,7 @@ export const LettersDirectory: React.FC = () => {
               </h3>
             </div>
             <div className="text-xs text-slate-700 leading-relaxed font-semibold">
-              <EditableText label="المخرج الصوتي" value={currentLetter.articulationPoint} onSave={value => updateLetterDetails({ articulationPoint: value })} />
+              <EditableText suggestions={Object.values(ARABIC_LETTERS_MAP).map(info => info.articulationPoint)} label="المخرج الصوتي" value={currentLetter.articulationPoint} onSave={value => updateLetterDetails({ articulationPoint: value })} />
             </div>
 
             <div className="pt-2">
@@ -634,7 +634,7 @@ export const LettersDirectory: React.FC = () => {
                 className="bg-white p-3.5 rounded-xl border border-sky-100 flex items-center justify-between gap-3 shadow-2xs"
               >
                 <div className="text-xs font-bold text-slate-800 leading-relaxed">
-                  <EditableText label="جملة التدريب" value={sent} onSave={value => updateLetterDetails({ practiceSentences: currentLetter.practiceSentences.map((item, i) => i === idx ? value : item) })} onDelete={() => updateLetterDetails({ practiceSentences: currentLetter.practiceSentences.filter((_, i) => i !== idx) })} />
+                  <EditableText suggestions={ARABIC_LETTERS_MAP[selectedLetterKey].practiceSentences} label="جملة التدريب" value={sent} onSave={value => updateLetterDetails({ practiceSentences: currentLetter.practiceSentences.map((item, i) => i === idx ? value : item) })} onDelete={() => updateLetterDetails({ practiceSentences: currentLetter.practiceSentences.filter((_, i) => i !== idx) })} />
                 </div>
                 
               </div>

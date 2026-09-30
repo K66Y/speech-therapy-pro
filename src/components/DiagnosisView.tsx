@@ -717,7 +717,7 @@ export const DiagnosisView: React.FC<DiagnosisViewProps> = ({
                                 <SavedField
                                   type="text"
                                   placeholder="مثال: يبدل الراء بالياء (ينطق يمان)"
-                                  value={item?.beginning?.notes || ''}
+                                  aria-label="ملاحظات النطق" value={item?.beginning?.notes || ''}
                                   onChange={e => handleNotesChange(letter, 'beginning', e.target.value)}
                                   className="w-full p-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg font-medium"
                                 />
@@ -731,7 +731,7 @@ export const DiagnosisView: React.FC<DiagnosisViewProps> = ({
                                 <SavedField
                                   type="text"
                                   placeholder="مثال: يكرر الصوت أو يحذفه"
-                                  value={item?.middle?.notes || ''}
+                                  aria-label="ملاحظات النطق" value={item?.middle?.notes || ''}
                                   onChange={e => handleNotesChange(letter, 'middle', e.target.value)}
                                   className="w-full p-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg font-medium"
                                 />
@@ -745,7 +745,7 @@ export const DiagnosisView: React.FC<DiagnosisViewProps> = ({
                                 <SavedField
                                   type="text"
                                   placeholder="مثال: يحذف الحرف نهائياً"
-                                  value={item?.end?.notes || ''}
+                                  aria-label="ملاحظات النطق" value={item?.end?.notes || ''}
                                   onChange={e => handleNotesChange(letter, 'end', e.target.value)}
                                   className="w-full p-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg font-medium"
                                 />
@@ -788,7 +788,7 @@ export const DiagnosisView: React.FC<DiagnosisViewProps> = ({
 
           <SavedField multiline
             rows={5}
-            value={data.summaryConclusion}
+            aria-label="ملخص التشخيص" value={data.summaryConclusion}
             onChange={e => {
               const updated = { ...data, summaryConclusion: e.target.value };
               commitAssessment(updated);

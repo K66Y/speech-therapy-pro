@@ -109,9 +109,9 @@ export const LongTermPlanView: React.FC<LongTermPlanViewProps> = ({
 
           {/* Academic Info Banner */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-3.5 bg-slate-50 border border-slate-200/80 rounded-xl text-xs mb-6">
-            <label><span className="text-slate-500 block text-[11px]">العام الدراسي:</span><SavedField value={data.academicYear} onChange={e => { const updated={...data,academicYear:e.target.value}; setData(updated); onUpdatePlan(updated); }} className="w-full bg-transparent font-bold text-slate-800 print:border-0" /></label>
-            <label><span className="text-slate-500 block text-[11px]">الفصل الدراسي:</span><SavedField value={data.semester} onChange={e => { const updated={...data,semester:e.target.value}; setData(updated); onUpdatePlan(updated); }} className="w-full bg-transparent font-bold text-slate-800 print:border-0" /></label>
-            <label><span className="text-slate-500 block text-[11px]">مدة الخطة:</span><SavedField value={data.goals[0]?.targetPeriod || ''} onChange={e => { const updated={...data,goals:data.goals.map(goal=>({...goal,targetPeriod:e.target.value}))}; setData(updated); onUpdatePlan(updated); }} className="w-full bg-transparent font-bold text-slate-800 print:border-0" /></label>
+            <label><span className="text-slate-500 block text-[11px]">العام الدراسي:</span><SavedField aria-label="العام الدراسي" value={data.academicYear} onChange={e => { const updated={...data,academicYear:e.target.value}; setData(updated); onUpdatePlan(updated); }} className="w-full bg-transparent font-bold text-slate-800 print:border-0" /></label>
+            <label><span className="text-slate-500 block text-[11px]">الفصل الدراسي:</span><SavedField aria-label="الفصل الدراسي" value={data.semester} onChange={e => { const updated={...data,semester:e.target.value}; setData(updated); onUpdatePlan(updated); }} className="w-full bg-transparent font-bold text-slate-800 print:border-0" /></label>
+            <label><span className="text-slate-500 block text-[11px]">مدة الخطة:</span><SavedField aria-label="مدة الخطة" value={data.goals[0]?.targetPeriod || ''} onChange={e => { const updated={...data,goals:data.goals.map(goal=>({...goal,targetPeriod:e.target.value}))}; setData(updated); onUpdatePlan(updated); }} className="w-full bg-transparent font-bold text-slate-800 print:border-0" /></label>
             <div><span className="text-slate-500 block text-[11px]">الحروف المستهدفة:</span><strong className="text-emerald-800">{data.goals.map(goal=>goal.targetLetter).join('، ')}</strong></div>
           </div>
 
@@ -157,7 +157,7 @@ export const LongTermPlanView: React.FC<LongTermPlanViewProps> = ({
                     <span className="text-xs font-bold text-slate-500 block mb-1">
                       نص الهدف التدريبي طويل المدى:
                     </span>
-                    <SavedField multiline aria-label="نص الهدف التدريبي" value={g.goalDescription} onChange={e => updateGoal(g.id, { goalDescription: e.target.value })} rows={3} className="w-full text-sm font-black text-slate-900 leading-relaxed bg-emerald-50/50 p-3 rounded-lg border border-emerald-200/60 print:hidden" />
+                    <SavedField multiline targetLetter={g.targetLetter} aria-label="نص الهدف التدريبي" value={g.goalDescription} onChange={e => updateGoal(g.id, { goalDescription: e.target.value })} rows={3} className="w-full text-sm font-black text-slate-900 leading-relaxed bg-emerald-50/50 p-3 rounded-lg border border-emerald-200/60 print:hidden" />
                     
                   </div>
 
@@ -166,7 +166,7 @@ export const LongTermPlanView: React.FC<LongTermPlanViewProps> = ({
                       <span className="text-slate-500 block font-bold text-[11px] mb-0.5">
                         خط الأساس عند البدء:
                       </span>
-                      <SavedField multiline aria-label="خط الأساس" value={g.startingBaseline} onChange={e => updateGoal(g.id, { startingBaseline: e.target.value })} className="w-full bg-transparent text-slate-800 print:hidden" rows={3} />
+                      <SavedField multiline targetLetter={g.targetLetter} aria-label="خط الأساس" value={g.startingBaseline} onChange={e => updateGoal(g.id, { startingBaseline: e.target.value })} className="w-full bg-transparent text-slate-800 print:hidden" rows={3} />
                     </div>
                     <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200">
                       <span className="text-slate-500 block font-bold text-[11px] mb-0.5">
@@ -205,7 +205,7 @@ export const LongTermPlanView: React.FC<LongTermPlanViewProps> = ({
                   </h4>
                     <SavedField multiline aria-label="إجراء المرآة" value={data.toolsUsed[0] || ''} onChange={e => updateTool(0, e.target.value)} rows={3} className="w-full rounded border border-sky-100 bg-white/60 p-2 text-xs text-slate-700 leading-relaxed print:hidden" />
                     
-                    <label className="mt-2 block text-[11px] font-bold text-slate-600 print:hidden">تفاصيل إضافية للإجراء<SavedField multiline value={data.toolsUsed[2] || ''} onChange={e => updateTool(2, e.target.value)} rows={2} className="mt-1 w-full rounded border border-slate-200 p-2" /></label>
+                    <label className="mt-2 block text-[11px] font-bold text-slate-600 print:hidden">تفاصيل إضافية للإجراء<SavedField multiline aria-label="تفاصيل إضافية" value={data.toolsUsed[2] || ''} onChange={e => updateTool(2, e.target.value)} rows={2} className="mt-1 w-full rounded border border-slate-200 p-2" /></label>
                 </div>
               </div>
 
@@ -220,7 +220,7 @@ export const LongTermPlanView: React.FC<LongTermPlanViewProps> = ({
                   </h4>
                   <SavedField multiline aria-label="إجراء خافض اللسان" value={data.toolsUsed[1] || ''} onChange={e => updateTool(1, e.target.value)} rows={3} className="w-full rounded border border-amber-100 bg-white/60 p-2 text-xs text-slate-700 leading-relaxed print:hidden" />
                   
-                  <label className="mt-2 block text-[11px] font-bold text-slate-600 print:hidden">أداة أخرى<SavedField multiline value={data.toolsUsed.slice(3).join('\n')} onChange={e => { const rest = e.target.value.split('\n'); const updated = { ...data, toolsUsed: [...data.toolsUsed.slice(0, 3), ...rest] }; setData(updated); onUpdatePlan(updated); }} rows={2} className="mt-1 w-full rounded border border-slate-200 p-2" /></label>
+                  <label className="mt-2 block text-[11px] font-bold text-slate-600 print:hidden">أداة أخرى<SavedField multiline aria-label="أداة أخرى" value={data.toolsUsed.slice(3).join('\n')} onChange={e => { const rest = e.target.value.split('\n'); const updated = { ...data, toolsUsed: [...data.toolsUsed.slice(0, 3), ...rest] }; setData(updated); onUpdatePlan(updated); }} rows={2} className="mt-1 w-full rounded border border-slate-200 p-2" /></label>
                 </div>
               </div>
             </div>
@@ -233,7 +233,7 @@ export const LongTermPlanView: React.FC<LongTermPlanViewProps> = ({
               ثالثاً: الاستراتيجيات العامة للتدريب والتعميم
             </h3>
 
-            <div className="mb-3 print:hidden"><label className="block text-xs font-bold text-slate-600 mb-1">الاستراتيجيات (كل سطر استراتيجية)</label><SavedField multiline value={data.generalStrategies.join('\n')} onChange={e => { const updated = { ...data, generalStrategies: e.target.value.split('\n') }; setData(updated); onUpdatePlan(updated); }} rows={4} className="w-full rounded-lg border border-slate-200 bg-white p-2 text-xs" /><button type="button" onClick={addStrategy} className="mt-2 rounded-lg bg-emerald-800 px-3 py-1.5 text-xs font-bold text-white">إضافة إجراء</button></div>
+            <div className="mb-3 print:hidden"><label className="block text-xs font-bold text-slate-600 mb-1">الاستراتيجيات (كل سطر استراتيجية)</label><SavedField multiline aria-label="الاستراتيجيات" value={data.generalStrategies.join('\n')} onChange={e => { const updated = { ...data, generalStrategies: e.target.value.split('\n') }; setData(updated); onUpdatePlan(updated); }} rows={4} className="w-full rounded-lg border border-slate-200 bg-white p-2 text-xs" /><button type="button" onClick={addStrategy} className="mt-2 rounded-lg bg-emerald-800 px-3 py-1.5 text-xs font-bold text-white">إضافة إجراء</button></div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
               {data.generalStrategies.map((strat, i) => (
                 <div

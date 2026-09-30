@@ -153,7 +153,7 @@ export const ShortTermPlanView: React.FC<ShortTermPlanViewProps> = ({
           <div className="bg-teal-50/70 border border-teal-200/80 rounded-xl p-4 mb-6 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
             <div>
               <label className="font-bold text-teal-950 block text-sm mb-0.5">عنوان الخطة
-                <SavedField value={data.planTitle} onChange={e => { const updated = { ...data, planTitle: e.target.value }; setData(updated); onUpdatePlan(updated); }} className="mt-1 w-full rounded-md border border-teal-200 bg-white px-2 py-1 print:hidden" />
+                <SavedField aria-label="عنوان الخطة" value={data.planTitle} onChange={e => { const updated = { ...data, planTitle: e.target.value }; setData(updated); onUpdatePlan(updated); }} className="mt-1 w-full rounded-md border border-teal-200 bg-white px-2 py-1 print:hidden" />
               </label>
               <p className="text-slate-600">
                 مرجع الهدف العام: <strong className="text-slate-800">{data.longTermGoalRef}</strong> | الحروف المستهدفة: [ <strong className="text-emerald-800 text-sm">{(data.targetLetters || [data.targetLetter]).join('، ')}</strong> ]
@@ -245,7 +245,7 @@ export const ShortTermPlanView: React.FC<ShortTermPlanViewProps> = ({
                         </SavedSelect>
                       </label>
                       <label className="text-[11px] font-bold text-slate-600">تفاصيل الهدف والإجراءات
-                        <EditableText label="تفاصيل الهدف" value={obj.objectiveText} onSave={objectiveText => updateObjective(obj.id, { objectiveText })} rows={3} className="mt-1 rounded-lg border border-slate-200 bg-white p-2 text-slate-800" />
+                        <EditableText targetLetter={obj.targetLetter} label="تفاصيل الهدف" value={obj.objectiveText} onSave={objectiveText => updateObjective(obj.id, { objectiveText })} rows={3} className="mt-1 rounded-lg border border-slate-200 bg-white p-2 text-slate-800" />
                       </label>
                     </div>
 
@@ -257,7 +257,7 @@ export const ShortTermPlanView: React.FC<ShortTermPlanViewProps> = ({
                           <span className="font-bold text-sky-950 block text-[11px]">
                             1- إجراء المرآة للهدف:
                           </span>
-                          <EditableText label="إجراء المرآة" value={obj.mirrorUsageDetails} onSave={mirrorUsageDetails => updateObjective(obj.id, { mirrorUsageDetails })} rows={2} className="text-slate-700" />
+                          <EditableText targetLetter={obj.targetLetter} label="إجراء المرآة" value={obj.mirrorUsageDetails} onSave={mirrorUsageDetails => updateObjective(obj.id, { mirrorUsageDetails })} rows={2} className="text-slate-700" />
                         </div>
                       </div>
 

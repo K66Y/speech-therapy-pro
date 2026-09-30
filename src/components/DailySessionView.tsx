@@ -39,7 +39,7 @@ export const DailySessionView: React.FC<DailySessionViewProps> = ({
   const [showAddForm, setShowAddForm] = useState(false);
   const [targetLetter, setTargetLetter] = useState(student.targetLetters?.[0] || sessions[0]?.targetLetter || 'ر');
   useEffect(() => setTargetLetter(student.targetLetters?.[0] || sessions[0]?.targetLetter || 'ر'), [student.id]);
-  const edit = (session: DailySessionLog, field: keyof DailySessionLog, label: string) => <EditableText label={label} value={String(session[field] ?? '')} onSave={value => onUpdateSession({ ...session, [field]: value })} onDelete={() => onUpdateSession({ ...session, [field]: '' })} className="w-full text-slate-700" />;
+  const edit = (session: DailySessionLog, field: keyof DailySessionLog, label: string) => <EditableText targetLetter={session.targetLetter} label={label} value={String(session[field] ?? '')} onSave={value => onUpdateSession({ ...session, [field]: value })} onDelete={() => onUpdateSession({ ...session, [field]: '' })} className="w-full text-slate-700" />;
   const [newSessionDate, setNewSessionDate] = useState(() => getLiveHijriDate());
   const [newObjective, setNewObjective] = useState('');
   const [newAccuracy, setNewAccuracy] = useState(85);
@@ -128,19 +128,15 @@ export const DailySessionView: React.FC<DailySessionViewProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
             <div>
               <label className="font-bold text-slate-700 block mb-1">تاريخ الجلسة:</label>
-              <input
-                type="text"
+              <SavedField aria-label="تاريخ الجلسة"
                 value={newSessionDate}
                 onChange={e => setNewSessionDate(e.target.value)}
-                dir="ltr"
-                inputMode="numeric"
                 className="w-full bg-white border border-slate-200 rounded-lg p-2"
               />
             </div>
             <div>
               <label className="font-bold text-slate-700 block mb-1">الهدف النطقي للجلسة:</label>
-              <input
-                type="text"
+              <SavedField aria-label="هدف الجلسة" targetLetter={targetLetter}
                 value={newObjective}
                 onChange={e => setNewObjective(e.target.value)}
                 className="w-full bg-white border border-slate-200 rounded-lg p-2"
@@ -152,7 +148,7 @@ export const DailySessionView: React.FC<DailySessionViewProps> = ({
             </div>
             <div>
               <label className="font-bold text-slate-700 block mb-1">نسبة الإتقان المحققة (%):</label>
-              <input
+              <SavedField aria-label="نسبة إتقان الجلسة"
                 type="number"
                 min="0"
                 max="100"
@@ -176,8 +172,7 @@ export const DailySessionView: React.FC<DailySessionViewProps> = ({
             </div>
             <div className="md:col-span-2">
               <label className="font-bold text-slate-700 block mb-1">الواجب المنزلي المكلف به:</label>
-              <input
-                type="text"
+              <SavedField aria-label="الواجب المنزلي" targetLetter={targetLetter}
                 value={newHomework}
                 onChange={e => setNewHomework(e.target.value)}
                 className="w-full bg-white border border-slate-200 rounded-lg p-2"
@@ -185,7 +180,7 @@ export const DailySessionView: React.FC<DailySessionViewProps> = ({
             </div>
             <div className="md:col-span-3">
               <label className="font-bold text-slate-700 block mb-1">ملاحظات الجلسة:</label>
-              <textarea
+              <SavedField multiline aria-label="ملاحظات الجلسة"
                 rows={2}
                 value={newNotes}
                 onChange={e => setNewNotes(e.target.value)}
@@ -288,7 +283,7 @@ export const DailySessionView: React.FC<DailySessionViewProps> = ({
                   {s.exercisesPerformed.map((ex, i) => (
                     <div key={i} className="flex items-center gap-1.5 text-slate-600 bg-slate-50 p-2 rounded-lg border border-slate-100">
                       <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                      <EditableText label={`نشاط ${i + 1}`} value={ex} onSave={value => onUpdateSession({ ...s, exercisesPerformed: s.exercisesPerformed.map((item, index) => index === i ? value : item) })} onDelete={() => onUpdateSession({ ...s, exercisesPerformed: s.exercisesPerformed.filter((_, index) => index !== i) })} className="flex-1" />
+                      <EditableText targetLetter={s.targetLetter} label={`نشاط ${i + 1}`} value={ex} onSave={value => onUpdateSession({ ...s, exercisesPerformed: s.exercisesPerformed.map((item, index) => index === i ? value : item) })} onDelete={() => onUpdateSession({ ...s, exercisesPerformed: s.exercisesPerformed.filter((_, index) => index !== i) })} className="flex-1" />
                     </div>
                   ))}
                 </div>

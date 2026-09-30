@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { SavedField } from './SavedField';
+import { ARABIC_LETTERS_MAP } from '../data/arabicLettersData';
 import { LetterWordItem, ArabicLetterKey } from '../types/speechTherapy';
 import { X, Check, Image as ImageIcon, Sparkles, Upload } from 'lucide-react';
 
@@ -133,9 +135,8 @@ export const EditWordModal: React.FC<EditWordModalProps> = ({
             <label className="font-bold text-slate-800 block mb-1">
               الكلمة النموذجية (مع التشكيل للوضوح النطقي) <span className="text-rose-600">*</span>
             </label>
-            <input
+            <SavedField aria-label="الكلمة النموذجية" suggestions={Object.values(ARABIC_LETTERS_MAP[letter].examples).flatMap(group => group.words.map(item => item.word)).filter(Boolean)}
               type="text"
-              required
               value={word}
               onChange={e => setWord(e.target.value)}
               placeholder="مثال: رُمَّان"
@@ -147,8 +148,7 @@ export const EditWordModal: React.FC<EditWordModalProps> = ({
             <label className="font-bold text-slate-800 block mb-1">
               الجملة السياقية لتدريب الطالب <span className="text-rose-600">*</span>
             </label>
-            <textarea
-              required
+            <SavedField multiline aria-label="الجملة السياقية" suggestions={ARABIC_LETTERS_MAP[letter].practiceSentences}
               rows={2}
               value={sentence}
               onChange={e => setSentence(e.target.value)}

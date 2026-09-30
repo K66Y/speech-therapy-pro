@@ -151,7 +151,7 @@ export const CaseStudyView: React.FC<CaseStudyViewProps> = ({
               <span className="text-slate-500 block mb-1">اسم الطالب رباعياً:</span>
               <SavedField
                 type="text"
-                value={std.fullName}
+                aria-label="اسم الطالب" value={std.fullName}
                 onChange={e => { const updated = { ...data, student: { ...std, fullName: e.target.value } }; setData(updated); onUpdateCaseStudy(updated); }}
                 className="w-full bg-white border border-slate-200 rounded-lg p-2 font-bold text-slate-900"
               />
@@ -160,7 +160,7 @@ export const CaseStudyView: React.FC<CaseStudyViewProps> = ({
               <span className="text-slate-500 block mb-1">رقم السجل المدني:</span>
               <SavedField
                 type="text"
-                value={std.nationalId}
+                aria-label="السجل المدني" value={std.nationalId}
                 onChange={e => { const updated = { ...data, student: { ...std, nationalId: e.target.value } }; setData(updated); onUpdateCaseStudy(updated); }}
                 className="w-full bg-white border border-slate-200 rounded-lg p-2 font-mono font-bold text-slate-900"
               />
@@ -174,7 +174,7 @@ export const CaseStudyView: React.FC<CaseStudyViewProps> = ({
             </div>
             <div>
               <span className="text-slate-500 block mb-1">الفصل:</span>
-              <SavedField type="text" value={std.classRoom} onChange={e => { const updated = { ...data, student: { ...std, classRoom: e.target.value } }; setData(updated); onUpdateCaseStudy(updated); }} className="w-full bg-white border border-slate-200 rounded-lg p-2 font-bold text-slate-900" />
+              <SavedField type="text" aria-label="الفصل" value={std.classRoom} onChange={e => { const updated = { ...data, student: { ...std, classRoom: e.target.value } }; setData(updated); onUpdateCaseStudy(updated); }} className="w-full bg-white border border-slate-200 rounded-lg p-2 font-bold text-slate-900" />
             </div>
             <div>
               <span className="text-slate-500 block mb-1">العمر التقديري المرتبط بالصف:</span>
@@ -184,7 +184,7 @@ export const CaseStudyView: React.FC<CaseStudyViewProps> = ({
               <span className="text-slate-500 block mb-1">اسم ولي الأمر:</span>
               <SavedField
                 type="text"
-                value={std.guardianName}
+                aria-label="اسم ولي الأمر" value={std.guardianName}
                 onChange={e => { const updated = { ...data, student: { ...std, guardianName: e.target.value } }; setData(updated); onUpdateCaseStudy(updated); }}
                 className="w-full bg-white border border-slate-200 rounded-lg p-2 font-bold text-slate-900"
               />
@@ -210,7 +210,7 @@ export const CaseStudyView: React.FC<CaseStudyViewProps> = ({
               <label className="font-bold text-slate-700">التاريخ الطبي والحركي:</label>
               <SavedField multiline
                 rows={2}
-                value={data.medicalHistory}
+                aria-label="التاريخ الطبي" value={data.medicalHistory}
                 onChange={e => { const updated = { ...data, medicalHistory: e.target.value }; setData(updated); onUpdateCaseStudy(updated); }}
                 className="w-full border border-slate-200 rounded-xl p-2.5 bg-slate-50/50 leading-relaxed"
               />
@@ -220,7 +220,7 @@ export const CaseStudyView: React.FC<CaseStudyViewProps> = ({
               <label className="font-bold text-slate-700">تاريخ ظهور مشكلة النطق والكلام:</label>
               <SavedField multiline
                 rows={2}
-                value={data.speechHistory}
+                aria-label="تاريخ ظهور الصعوبة" value={data.speechHistory}
                 onChange={e => { const updated = { ...data, speechHistory: e.target.value }; setData(updated); onUpdateCaseStudy(updated); }}
                 className="w-full border border-slate-200 rounded-xl p-2.5 bg-slate-50/50 leading-relaxed"
               />
@@ -230,7 +230,7 @@ export const CaseStudyView: React.FC<CaseStudyViewProps> = ({
               <label className="font-bold text-slate-700">الفحص السمعي والإدراك السمعي للأصوات:</label>
               <SavedField multiline
                 rows={2}
-                value={data.hearingStatus}
+                aria-label="الفحص السمعي" value={data.hearingStatus}
                 onChange={e => { const updated = { ...data, hearingStatus: e.target.value }; setData(updated); onUpdateCaseStudy(updated); }}
                 className="w-full border border-slate-200 rounded-xl p-2.5 bg-slate-50/50 leading-relaxed"
               />
@@ -240,7 +240,7 @@ export const CaseStudyView: React.FC<CaseStudyViewProps> = ({
               <label className="font-bold text-slate-700">السلوك والتواصل الصفي:</label>
               <SavedField multiline
                 rows={2}
-                value={data.behaviorNotes}
+                aria-label="السلوك والتواصل الصفي" value={data.behaviorNotes}
                 onChange={e => { const updated = { ...data, behaviorNotes: e.target.value }; setData(updated); onUpdateCaseStudy(updated); }}
                 className="w-full border border-slate-200 rounded-xl p-2.5 bg-slate-50/50 leading-relaxed"
               />
@@ -273,7 +273,7 @@ export const CaseStudyView: React.FC<CaseStudyViewProps> = ({
               </p>
               <SavedField multiline
                 rows={3}
-                value={exam.mirrorObservation}
+                aria-label="إجراء المرآة" value={exam.mirrorObservation}
                 onChange={e =>
                   ((updated: CaseStudyData) => { setData(updated); onUpdateCaseStudy(updated); })({ ...data, oralMotorExam: { ...exam, mirrorObservation: e.target.value } })
                 }
@@ -295,7 +295,7 @@ export const CaseStudyView: React.FC<CaseStudyViewProps> = ({
               </p>
               <SavedField multiline
                 rows={3}
-                value={exam.tongueDepressorExam}
+                aria-label="إجراء خافض اللسان" value={exam.tongueDepressorExam}
                 onChange={e =>
                   ((updated: CaseStudyData) => { setData(updated); onUpdateCaseStudy(updated); })({ ...data, oralMotorExam: { ...exam, tongueDepressorExam: e.target.value } })
                 }
@@ -411,7 +411,7 @@ export const CaseStudyView: React.FC<CaseStudyViewProps> = ({
             </h4>
             <SavedField
               type="text"
-              value={data.initialDiagnosis}
+              aria-label="التشخيص الأولي" value={data.initialDiagnosis}
               onChange={e => { const updated = { ...data, initialDiagnosis: e.target.value }; setData(updated); onUpdateCaseStudy(updated); }}
               className="w-full bg-white border border-emerald-300 rounded-xl p-2.5 font-bold text-slate-900 text-sm"
             />
@@ -429,7 +429,7 @@ export const CaseStudyView: React.FC<CaseStudyViewProps> = ({
                   </span>
                   <SavedField
                     type="text"
-                    value={rec}
+                    aria-label="التوصيات" value={rec}
                     onChange={e => {
                       const newRecs = [...data.recommendations];
                       newRecs[i] = e.target.value;

@@ -141,7 +141,7 @@ export const HomeworkView: React.FC<HomeworkViewProps> = ({
               رسالة وإرشادات التدريب المنزلي إلى ولي أمر الطالب:
             </h3>
           </div>
-          <EditableText label="إرشادات ولي الأمر" value={activeHw.letterInstructionsForParent} onSave={letterInstructionsForParent => updateHomework({ letterInstructionsForParent })} onDelete={() => updateHomework({ letterInstructionsForParent: '' })} className="text-sm bg-white/80 p-3.5 rounded-xl" />
+          <EditableText targetLetter={activeHw.targetLetter} label="إرشادات ولي الأمر" value={activeHw.letterInstructionsForParent} onSave={letterInstructionsForParent => updateHomework({ letterInstructionsForParent })} onDelete={() => updateHomework({ letterInstructionsForParent: '' })} className="text-sm bg-white/80 p-3.5 rounded-xl" />
           <ChoicePicker category={`parent-guidance-${activeHw.targetLetter}`} label="التوجيهات" suggestions={parentGuidanceSuggestions(activeHw.targetLetter)} onSelect={letterInstructionsForParent => updateHomework({ letterInstructionsForParent })} />
 
           <div className="flex items-start gap-2.5 bg-sky-50 p-3.5 rounded-xl border border-sky-200 text-xs">
@@ -177,7 +177,7 @@ export const HomeworkView: React.FC<HomeworkViewProps> = ({
                       <SavedSelect aria-label="موضع الحرف" value={w.position} onChange={e => updateHomework({ wordsToPractice: activeHw.wordsToPractice.map((item, i) => i === idx ? { ...item, position: e.target.value as typeof item.position } : item) })}>{['أول الكلمة','وسط الكلمة','آخر الكلمة'].map(position => <option key={position}>{position}</option>)}</SavedSelect>
                     </td>
                     <td className="p-3 font-black text-emerald-900 text-lg border border-slate-200">
-                      <EditableText label="كلمة الواجب" value={w.word} onSave={word => updateHomework({ wordsToPractice: activeHw.wordsToPractice.map((item, i) => i === idx ? { ...item, word } : item) })} onDelete={() => updateHomework({ wordsToPractice: activeHw.wordsToPractice.filter((_, i) => i !== idx) })} />
+                      <EditableText suggestions={ARABIC_LETTERS_MAP[activeHw.targetLetter].examples[w.position === 'أول الكلمة' ? 'beginning' : w.position === 'وسط الكلمة' ? 'middle' : 'end'].words.map(item => item.word).filter(Boolean)} label="كلمة الواجب" value={w.word} onSave={word => updateHomework({ wordsToPractice: activeHw.wordsToPractice.map((item, i) => i === idx ? { ...item, word } : item) })} onDelete={() => updateHomework({ wordsToPractice: activeHw.wordsToPractice.filter((_, i) => i !== idx) })} />
                     </td>
                     <td className="p-3 border border-slate-200">
                       <SavedField aria-label="عدد التكرار" type="number" min={1} max={20} value={w.repetitionCount} onChange={e => updateHomework({ wordsToPractice: activeHw.wordsToPractice.map((item, i) => i === idx ? { ...item, repetitionCount: Number(e.target.value) } : item) })} />
@@ -207,7 +207,7 @@ export const HomeworkView: React.FC<HomeworkViewProps> = ({
           </span>
           <div className="flex items-center justify-center gap-3">
             <h4 className="text-xl sm:text-2xl font-black text-emerald-900">
-              <EditableText label="جملة التدريب" value={activeHw.sentenceToRepeat} onSave={sentenceToRepeat => updateHomework({ sentenceToRepeat })} onDelete={() => updateHomework({ sentenceToRepeat: '' })} />
+              <EditableText suggestions={ARABIC_LETTERS_MAP[activeHw.targetLetter].practiceSentences} label="جملة التدريب" value={activeHw.sentenceToRepeat} onSave={sentenceToRepeat => updateHomework({ sentenceToRepeat })} onDelete={() => updateHomework({ sentenceToRepeat: '' })} />
             </h4>
           </div>
         </div>
