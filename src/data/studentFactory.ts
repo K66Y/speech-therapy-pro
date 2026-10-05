@@ -12,6 +12,7 @@ import {
 import { ARABIC_LETTERS_LIST, ARABIC_LETTERS_MAP } from './arabicLettersData';
 import { SPECIALIST_NAME, SCHOOL_KLICHE } from './sampleData';
 import { getLiveHijriDate } from '../services/dateService';
+import { parentTrainingGuide } from '../services/parentTrainingGuide';
 
 export function createNewStudentRecords(student: StudentProfile, targetLettersInput: ArabicLetterKey[] | ArabicLetterKey) {
   const targetLetters = Array.isArray(targetLettersInput) ? [...new Set(targetLettersInput)] : [targetLettersInput];
@@ -272,7 +273,7 @@ export function createNewStudentRecords(student: StudentProfile, targetLettersIn
       dateGiven: currentDate,
       returnDate: currentDate,
       letterInstructionsForParent: `نرجو تدريب ابنكم أمام مرآة المنزل لمدة 5-10 دقائق وملاحظة حركة الفم واللسان عند نطق صوت حرف (${targetLetter}).`,
-      mirrorInstructionAtHome: 'اجعل الطالب ينظر في المرآة ويبتسم بهدوء ويراقب وضعية شفتيه ولسانه أثناء نطق الكلمات.',
+      mirrorInstructionAtHome: parentTrainingGuide(targetLetter),
       wordsToPractice: [
         { position: 'أول الكلمة', word: letterInfo.examples.beginning.words[0].word, repetitionCount: 5 },
         { position: 'وسط الكلمة', word: letterInfo.examples.middle.words[0].word, repetitionCount: 5 },
@@ -292,6 +293,7 @@ export function createNewStudentRecords(student: StudentProfile, targetLettersIn
       id: `hw-${student.id}-${letter}`,
       targetLetter: letter,
       letterInstructionsForParent: `نرجو تدريب ابنكم أمام مرآة المنزل لمدة 5-10 دقائق وملاحظة حركة الفم واللسان عند نطق صوت حرف (${letter}).`,
+      mirrorInstructionAtHome: parentTrainingGuide(letter),
       wordsToPractice: [
         ...info.examples.beginning.words.map(w => ({ position: 'أول الكلمة' as const, word: w.word, repetitionCount: 5 })),
         ...info.examples.middle.words.map(w => ({ position: 'وسط الكلمة' as const, word: w.word, repetitionCount: 5 })),

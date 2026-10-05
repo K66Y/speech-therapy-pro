@@ -20,6 +20,7 @@ import { EditableText } from './EditableText';
 import { SavedField } from './SavedField';
 import { SavedSelect } from './SavedSelect';
 import { ChoicePicker, parentGuidanceSuggestions, feedbackSuggestions } from './ChoicePicker';
+import { parentTrainingGuide, shouldUpgradeParentTrainingGuide } from '../services/parentTrainingGuide';
 
 interface HomeworkViewProps {
   student: StudentProfile;
@@ -62,6 +63,13 @@ export const HomeworkView: React.FC<HomeworkViewProps> = ({
     const matching = homeworkList.find(item => item.id === activeHw.id) || homeworkList[0];
     if (matching) setActiveHw(matching);
   }, [student.id, homeworkList]);
+  useEffect(() => {
+    if (!shouldUpgradeParentTrainingGuide(activeHw.mirrorInstructionAtHome)) return;
+    const mirrorInstructionAtHome = parentTrainingGuide(activeHw.targetLetter);
+    const updated = { ...activeHw, mirrorInstructionAtHome };
+    setActiveHw(updated);
+    onUpdateHomework(updated);
+  }, [activeHw.id, activeHw.targetLetter, activeHw.mirrorInstructionAtHome, onUpdateHomework]);
   const updateHomework = (changes: Partial<HomeworkSheet>) => {
     const updated = { ...activeHw, ...changes };
     setActiveHw(updated);
@@ -71,7 +79,7 @@ export const HomeworkView: React.FC<HomeworkViewProps> = ({
     const existing = homeworkList.find(item => item.targetLetter === targetLetter);
     if (existing) { setActiveHw(existing); return; }
     const info = ARABIC_LETTERS_MAP[targetLetter];
-    updateHomework({ id: `hw-${student.id}-${targetLetter}-${Date.now()}`, targetLetter, parentNotes: '', specialistFeedback: '', letterInstructionsForParent: parentGuidanceSuggestions(targetLetter)[0], mirrorInstructionAtHome: 'التدريب أمام المرآة حسب النموذج الذي يوضحه المعلم للحرف المستهدف.', wordsToPractice: [
+    updateHomework({ id: `hw-${student.id}-${targetLetter}-${Date.now()}`, targetLetter, parentNotes: '', specialistFeedback: '', letterInstructionsForParent: parentGuidanceSuggestions(targetLetter)[0], mirrorInstructionAtHome: parentTrainingGuide(targetLetter), wordsToPractice: [
       ...info.examples.beginning.words.map(w => ({ position: 'أول الكلمة' as const, word: w.word, repetitionCount: 5 })),
       ...info.examples.middle.words.map(w => ({ position: 'وسط الكلمة' as const, word: w.word, repetitionCount: 5 })),
       ...info.examples.end.words.map(w => ({ position: 'آخر الكلمة' as const, word: w.word, repetitionCount: 5 }))
@@ -154,7 +162,7 @@ export const HomeworkView: React.FC<HomeworkViewProps> = ({
             <Eye className="w-4 h-4 text-sky-700 shrink-0 mt-0.5" />
             <div>
               <strong className="text-sky-950 block text-[11px] mb-0.5">
-                طريقة التدريب أمام مرآة المنزل:
+                طريقة تدريب ولي الأمر للطالب على حرف ({activeHw.targetLetter}):
               </strong>
               <EditableText label="طريقة التدريب بالمرآة" value={activeHw.mirrorInstructionAtHome} onSave={mirrorInstructionAtHome => updateHomework({ mirrorInstructionAtHome })} onDelete={() => updateHomework({ mirrorInstructionAtHome: '' })} />
             </div>

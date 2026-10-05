@@ -1,4 +1,5 @@
 import { homeworkColumns, homeworkPositions } from './homeworkGrid';
+import { parentTrainingGuide, shouldUpgradeParentTrainingGuide } from './parentTrainingGuide';
 import {
   Document,
   Packer,
@@ -828,6 +829,9 @@ export async function exportLettersGuideDocx(lettersMap = ARABIC_LETTERS_MAP) {
  * تصدير استمارة الواجب المنزلي (.docx)
  */
 export async function exportHomeworkDocx(student: StudentProfile, homework: HomeworkSheet) {
+  const parentMethod = shouldUpgradeParentTrainingGuide(homework.mirrorInstructionAtHome)
+    ? parentTrainingGuide(homework.targetLetter)
+    : homework.mirrorInstructionAtHome;
   const doc = new Document({
     sections: [
       {
@@ -857,7 +861,7 @@ export async function exportHomeworkDocx(student: StudentProfile, homework: Home
             spacing: { after: 120 },
             children: [
               new TextRun({ text: 'طريقة التدريب أمام مرآة المنزل: ', font: 'Cairo', bold: true, color: PRIMARY_COLOR, rightToLeft: true }),
-              new TextRun({ text: homework.mirrorInstructionAtHome, font: 'Cairo', rightToLeft: true })
+              new TextRun({ text: parentMethod, font: 'Cairo', rightToLeft: true })
             ]
           }),
 
