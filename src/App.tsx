@@ -324,10 +324,10 @@ function WorkspaceApp({ user }: { user: User | null }) {
     <div className="min-h-screen bg-slate-50/80 bg-[radial-gradient(#e0f2fe_1px,transparent_1px)] [background-size:24px_24px] flex flex-col text-slate-900 font-['Cairo',sans-serif]">
       {/* Top Header */}
       <header className="relative bg-sky-950 text-white border-b-4 border-sky-500 shadow-md print:hidden">
-        <div className="max-w-7xl mx-auto px-4 py-3 sm:px-6">
-          <div className="flex flex-col gap-4">
+        <div className="max-w-7xl mx-auto px-4 py-2 sm:px-6">
+          <div className="flex flex-col gap-2.5">
             {/* Title & Specialist */}
-            <div className="flex min-h-12 items-center gap-3.5 pl-32 sm:pl-44">
+            <div className="flex items-center gap-3.5">
               <div>
                 <h1 className="text-base sm:text-lg font-black tracking-wide text-white">
                   منظومة تدريبات النطق
@@ -382,37 +382,6 @@ function WorkspaceApp({ user }: { user: User | null }) {
                 <UserPlus className="w-4 h-4" />
                 <span>تسجيل طالب جديد</span>
               </button>
-
-              {isAccountMenuOpen && (
-                  <div className="absolute left-3 top-[4.25rem] w-72 rounded-2xl bg-white p-3 text-right text-slate-800 shadow-2xl border border-sky-200 z-[70]" dir="rtl">
-                    <div className="flex items-center gap-2 border-b border-slate-100 pb-3 mb-3">
-                      <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-sky-100 text-sky-800">
-                        <ShieldCheck className="w-5 h-5" />
-                      </div>
-                      <div className="min-w-0">
-                        <div className="font-black text-sm">تفاصيل الحساب</div>
-                        <div className="text-[11px] text-slate-500 truncate" dir="ltr">{user?.email || 'تشغيل محلي مؤقت'}</div>
-                      </div>
-                    </div>
-
-                    <div className={`flex items-center gap-2 rounded-xl px-3 py-2.5 text-xs font-bold mb-2 ${syncStatus === 'error' ? 'bg-red-50 text-red-800' : 'bg-sky-50 text-sky-900'}`}>
-                      {syncStatus === 'error' ? <CloudOff className="w-4 h-4" /> : <Cloud className="w-4 h-4" />}
-                      <span>{!user ? 'حفظ محلي مؤقت' : syncStatus === 'saving' ? 'جارٍ الحفظ' : syncStatus === 'saved' ? 'محفوظ سحابيًا' : syncStatus === 'error' ? 'تعذر الحفظ السحابي' : 'جارٍ التحميل'}</span>
-                    </div>
-
-                    <button onClick={() => { downloadBackup(); setIsAccountMenuOpen(false); }} className="w-full flex items-center gap-2 rounded-xl px-3 py-2.5 text-xs font-black text-emerald-800 hover:bg-emerald-50">
-                      <DatabaseBackup className="w-4 h-4" />
-                      <span>تنزيل نسخة احتياطية</span>
-                    </button>
-
-                    {user && <AccountPasswordSetup user={user} />}
-
-                    {user && <button onClick={async () => { if (!auth || !isHydrated) return; setSyncStatus('saving'); try { await saveWorkspace(user.uid, { students, caseStudies, assessments, longTermPlans, shortTermPlans, dailySessions, homeworkList, finalReports }); if (db) await waitForPendingWrites(db); await signOut(auth); } catch { setSyncStatus('error'); window.alert('لم يكتمل حفظ آخر التعديلات. لم نسجل خروجك لحماية بياناتك؛ تحقق من الاتصال وأعد المحاولة.'); } }} className="w-full flex items-center gap-2 rounded-xl px-3 py-2.5 text-xs font-black text-red-700 hover:bg-red-50">
-                      <LogOut className="w-4 h-4" />
-                      <span>تسجيل الخروج</span>
-                    </button>}
-                  </div>
-                )}
 
               {/* Master Word Export Menu */}
               <div className="relative">
@@ -529,23 +498,38 @@ function WorkspaceApp({ user }: { user: User | null }) {
                 <Printer className="w-4 h-4 text-sky-300" />
                 <span className="hidden sm:inline">طباعة رسمية</span>
               </button>
+
+              <div className="relative z-[80] print:hidden">
+                <button
+                  onClick={() => setIsAccountMenuOpen(open => !open)}
+                  className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-sky-200 bg-white px-3 py-2 text-xs font-black text-sky-950 shadow-xs hover:bg-sky-50 sm:w-auto"
+                  title="الحساب والنسخة الاحتياطية"
+                  aria-expanded={isAccountMenuOpen}
+                >
+                  <UserCircle className="h-4 w-4 text-emerald-700" />
+                  <span className="max-w-28 truncate">{user?.displayName || user?.email?.split('@')[0] || 'الحساب'}</span>
+                  <span className="text-[10px] font-semibold text-slate-500">{syncStatus === 'saved' ? 'محفوظ' : syncStatus === 'saving' ? 'جارٍ الحفظ' : 'الحساب'}</span>
+                  <ChevronDown className="h-3.5 w-3.5" />
+                </button>
+
+                {isAccountMenuOpen && (
+                  <div className="absolute bottom-auto left-0 top-full z-[90] mt-2 w-72 rounded-2xl border border-sky-200 bg-white p-3 text-right text-slate-800 shadow-2xl" dir="rtl">
+                    <div className="mb-3 flex items-center gap-2 border-b border-slate-100 pb-3">
+                      <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-sky-100 text-sky-800"><ShieldCheck className="h-5 w-5" /></div>
+                      <div className="min-w-0"><div className="text-sm font-black">تفاصيل الحساب</div><div className="truncate text-[11px] text-slate-500" dir="ltr">{user?.email || 'تشغيل محلي مؤقت'}</div></div>
+                    </div>
+                    <div className={`mb-2 flex items-center gap-2 rounded-xl px-3 py-2.5 text-xs font-bold ${syncStatus === 'error' ? 'bg-red-50 text-red-800' : 'bg-sky-50 text-sky-900'}`}>
+                      {syncStatus === 'error' ? <CloudOff className="h-4 w-4" /> : <Cloud className="h-4 w-4" />}
+                      <span>{!user ? 'حفظ محلي مؤقت' : syncStatus === 'saving' ? 'جارٍ الحفظ' : syncStatus === 'saved' ? 'محفوظ سحابيًا' : syncStatus === 'error' ? 'تعذر الحفظ السحابي' : 'جارٍ التحميل'}</span>
+                    </div>
+                    <button onClick={() => { downloadBackup(); setIsAccountMenuOpen(false); }} className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-xs font-black text-emerald-800 hover:bg-emerald-50"><DatabaseBackup className="h-4 w-4" /><span>تنزيل نسخة احتياطية</span></button>
+                    {user && <AccountPasswordSetup user={user} />}
+                    {user && <button onClick={async () => { if (!auth || !isHydrated) return; setSyncStatus('saving'); try { await saveWorkspace(user.uid, { students, caseStudies, assessments, longTermPlans, shortTermPlans, dailySessions, homeworkList, finalReports }); if (db) await waitForPendingWrites(db); await signOut(auth); } catch { setSyncStatus('error'); window.alert('لم يكتمل حفظ آخر التعديلات. لم نسجل خروجك لحماية بياناتك؛ تحقق من الاتصال وأعد المحاولة.'); } }} className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-xs font-black text-red-700 hover:bg-red-50"><LogOut className="h-4 w-4" /><span>تسجيل الخروج</span></button>}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-        <div className="absolute left-2 top-2 sm:left-3 sm:top-3 z-[80] print:hidden">
-          <button
-            onClick={() => setIsAccountMenuOpen(open => !open)}
-            className="flex items-center gap-1 sm:gap-2 rounded-full border border-white/20 bg-white/95 px-1.5 sm:px-2.5 py-1.5 text-sky-950 shadow-lg hover:bg-white"
-            title="الحساب والنسخة الاحتياطية"
-            aria-expanded={isAccountMenuOpen}
-          >
-            <span className="grid h-9 w-9 place-items-center rounded-full bg-emerald-50 text-emerald-800"><UserCircle className="h-6 w-6" /></span>
-            <span className="hidden sm:block max-w-28 text-left leading-tight" dir="ltr">
-              <span className="block truncate text-xs font-black">{user?.displayName || user?.email?.split('@')[0] || 'الحساب'}</span>
-              <span className="block text-[10px] font-semibold text-slate-500">{syncStatus === 'saved' ? 'محفوظ' : syncStatus === 'saving' ? 'جارٍ الحفظ' : 'الحساب'}</span>
-            </span>
-            <ChevronDown className="h-3.5 w-3.5" />
-          </button>
         </div>
       </header>
 
