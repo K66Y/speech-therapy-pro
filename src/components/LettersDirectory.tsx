@@ -289,13 +289,13 @@ export const LettersDirectory: React.FC = () => {
         />
 
         {/* Top Letter Profile Header */}
-        <div className="bg-gradient-to-r from-sky-50 via-slate-50 to-sky-50 rounded-2xl p-4 border border-sky-100 mb-6 flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
+        <div className="bg-gradient-to-r from-sky-50 via-slate-50 to-sky-50 rounded-2xl p-4 border border-sky-100 mb-6 flex items-center justify-center">
+          <div className="flex items-center justify-center gap-4 text-center">
             <div className="w-14 h-14 rounded-xl bg-sky-900 text-white flex items-center justify-center text-3xl font-black shadow-sm border border-sky-700 shrink-0">
               {currentLetter.letter}
             </div>
-            <div>
-              <div className="flex items-center gap-2 flex-wrap mb-1">
+            <div className="text-center">
+              <div className="flex items-center justify-center gap-2 flex-wrap mb-1">
                 <h2 className="text-2xl font-black text-slate-900">
                   {currentLetter.name}
                 </h2>
@@ -303,16 +303,12 @@ export const LettersDirectory: React.FC = () => {
                   مخرج {currentLetter.classification}
                 </span>
               </div>
-              <div className="text-xs text-slate-600 max-w-xl font-medium">
+              <div className="mx-auto max-w-xl text-xs font-medium text-slate-600">
                 <EditableText suggestions={Object.values(ARABIC_LETTERS_MAP).map(info => info.articulationType)} label="وصف المخرج" value={currentLetter.articulationType} onSave={value => updateLetterDetails({ articulationType: value })} />
               </div>
             </div>
           </div>
 
-          {/* Audio Quick Pronunciation */}
-          <div className="flex items-center gap-2">
-            
-          </div>
         </div>
 
         {/* Articulation & Phonetic Details Grid */}
