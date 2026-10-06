@@ -39,7 +39,7 @@ export const EditableText: React.FC<EditableTextProps> = ({
 
   const save = () => {
     const normalized = isDate ? formatHijriDate(draft.trim()) : draft.trim();
-    const problem = validate?.(normalized) || (isDate && normalized && !normalized.startsWith('\u2066') ? 'اكتب التاريخ الهجري بصيغة سنة/شهر/يوم، مثل 1448/04/19' : undefined);
+    const problem = validate?.(normalized) || (isDate && normalized && !normalized.startsWith('\u2067هـ\u2069') ? 'اكتب التاريخ الهجري بصيغة سنة/شهر/يوم، مثل 1448/04/19' : undefined);
     if (problem) { setError(problem); return; }
     setError('');
     onSave(normalized);
@@ -67,7 +67,7 @@ export const EditableText: React.FC<EditableTextProps> = ({
         </div>
       ) : (
         <div className="flex items-start gap-2">
-          <div className="min-w-0 flex-1 whitespace-pre-wrap leading-relaxed print:text-black">{suffix ? <bdi dir="ltr" style={{ whiteSpace: 'nowrap' }}>{value}{suffix}</bdi> : value || <span className="text-slate-400">—</span>}</div>
+          <div dir={isDate ? 'ltr' : undefined} className="min-w-0 flex-1 whitespace-pre-wrap leading-relaxed print:text-black">{suffix ? <bdi dir="ltr" style={{ whiteSpace: 'nowrap' }}>{value}{suffix}</bdi> : value || <span className="text-slate-400">—</span>}</div>
           <button type="button" onClick={() => { setDraft(value); setCustomizing(false); setAppendChoice(false); setError(''); setEditing(true); }} aria-label={`تعديل ${label}`} title={`تعديل ${label}`} className="shrink-0 rounded-md p-1 text-slate-400 opacity-60 transition hover:bg-sky-50 hover:text-sky-800 group-hover:opacity-100 print:hidden"><Pencil className="h-3.5 w-3.5" /></button>
           {saved && <span role="status" className="shrink-0 text-[10px] font-bold text-emerald-700 print:hidden">تم اعتماد التعديل</span>}
         </div>

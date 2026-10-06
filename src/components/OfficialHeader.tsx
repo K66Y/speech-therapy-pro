@@ -36,11 +36,11 @@ export const OfficialHeader: React.FC<OfficialHeaderProps> = ({
 
         <div className="relative flex items-start justify-start text-[10px] sm:text-xs text-slate-600" dir="ltr">
           <div className="flex flex-col items-start">
-            <span className="text-slate-500">التاريخ:</span>
+            <span className="text-slate-500" dir="rtl">التاريخ:</span>
             <bdi className="font-black text-sky-950" dir="ltr">{currentDateHijri}</bdi>
             <bdi className="font-semibold text-slate-700" dir="ltr">{currentDateGregorian}</bdi>
             <div className="print:hidden" dir="rtl">
-              <button type="button" className="text-sky-800 mt-2" onClick={() => { setDraftDate(currentDateHijri.replace(/[\u2066-\u2069]/g, '').replace(/\s*هـ$/, '')); setEditingDate(true); }}>✎ تعديل تاريخ النموذج</button>
+              <button type="button" className="text-sky-800 mt-2" onClick={() => { setDraftDate(currentDateHijri.replace(/[\u2066-\u2069]/g, '').replace(/^هـ\s*|\s*هـ$/g, '')); setEditingDate(true); }}>✎ تعديل تاريخ النموذج</button>
               {editingDate && <div className="bg-white border rounded-lg p-2 space-y-2">
                 <label>التاريخ الهجري (سنة/شهر/يوم)<input aria-label="تاريخ النموذج الهجري" dir="ltr" className="w-full border rounded p-2" value={draftDate} onChange={e => setDraftDate(e.target.value)} /></label>
                 <p>يسري على طباعة وتصدير النماذج في هذه الجلسة، ولا يغيّر تواريخ السجلات المحفوظة.</p>

@@ -13,7 +13,7 @@ let documentDate = '';
 export function setDocumentHijriDate(value: string): boolean {
   if (!value.trim()) { documentDate = ''; return true; }
   const formatted = formatHijriDate(value);
-  if (!formatted.startsWith('\u2066')) return false;
+  if (!formatted.startsWith('\u2067هـ\u2069')) return false;
   documentDate = formatted;
   return true;
 }
@@ -28,15 +28,15 @@ export function normalizeDigits(value: string | number): string {
 /** Normalize old YYYY/MM/DD records without changing the calendar or the saved date. */
 export function formatHijriDate(value: string): string {
   const clean = normalizeDigits(value).replace(/[\u200e\u200f\u202a-\u202e\u2066-\u2069]/g, '').trim();
-  const match = clean.match(/^(\d{1,4})[\/.-](\d{1,2})[\/.-](\d{1,4})(?:\s*هـ?)?$/);
+  const match = clean.match(/^(?:هـ\s*)?(\d{1,4})[\/.-](\d{1,2})[\/.-](\d{1,4})(?:\s*هـ)?$/);
   if (!match) return clean;
   const [, first, middle, last] = match;
   const yearFirst = first.length === 4;
   const year = yearFirst ? first : last;
   const day = yearFirst ? last : first;
   if (year.length !== 4 || Number(year) >= 1700 || Number(middle) < 1 || Number(middle) > 12 || Number(day) < 1 || Number(day) > 30) return clean;
-  // LTR isolation stops slash-separated dates from reversing inside RTL text and Word.
-  return `\u2066${year}/${middle.padStart(2, '0')}/${day.padStart(2, '0')}هـ\u2069`;
+  // Separate bidi isolates keep the era marker and YYYY/MM/DD order stable in screen, print, PDF and Word.
+  return `\u2067هـ\u2069 \u2066${year}/${middle.padStart(2, '0')}/${day.padStart(2, '0')}\u2069`;
 }
 
 /**
@@ -68,7 +68,7 @@ export function getLiveGregorianDate(date: Date = new Date()): string {
     const day = String(date.getDate()).padStart(2, '0');
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const year = date.getFullYear();
-    return `\u2066${day}/${month}/${year}\u2069 م`;
+    return `\u2067م\u2069 \u2066${year}/${month}/${day}\u2069`;
 }
 
 /**
