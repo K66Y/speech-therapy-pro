@@ -20,7 +20,7 @@ import { EditableText } from './EditableText';
 import { SavedField } from './SavedField';
 import { SavedSelect } from './SavedSelect';
 import { ChoicePicker, parentGuidanceSuggestions, feedbackSuggestions } from './ChoicePicker';
-import { parentTrainingGuide, shouldUpgradeParentTrainingGuide } from '../services/parentTrainingGuide';
+import { parentTrainingGuide, parentTrainingGuideForGuidance, shouldUpgradeParentTrainingGuide } from '../services/parentTrainingGuide';
 
 interface HomeworkViewProps {
   student: StudentProfile;
@@ -156,7 +156,7 @@ export const HomeworkView: React.FC<HomeworkViewProps> = ({
             </h3>
           </div>
           <EditableText targetLetter={activeHw.targetLetter} label="إرشادات ولي الأمر" value={activeHw.letterInstructionsForParent} onSave={letterInstructionsForParent => updateHomework({ letterInstructionsForParent })} onDelete={() => updateHomework({ letterInstructionsForParent: '' })} className="text-sm bg-white/80 p-3.5 rounded-xl" />
-          <ChoicePicker category={`parent-guidance-${activeHw.targetLetter}`} label="التوجيهات" suggestions={parentGuidanceSuggestions(activeHw.targetLetter)} onSelect={letterInstructionsForParent => updateHomework({ letterInstructionsForParent })} />
+          <ChoicePicker category={`parent-guidance-${activeHw.targetLetter}`} label="اختر التوجيه لتوليد طريقة التدريب المناسبة" suggestions={parentGuidanceSuggestions(activeHw.targetLetter)} onSelect={letterInstructionsForParent => updateHomework({ letterInstructionsForParent, mirrorInstructionAtHome: parentTrainingGuideForGuidance(activeHw.targetLetter, letterInstructionsForParent) })} />
 
           <div className="flex items-start gap-2.5 bg-sky-50 p-3.5 rounded-xl border border-sky-200 text-xs">
             <Eye className="w-4 h-4 text-sky-700 shrink-0 mt-0.5" />
