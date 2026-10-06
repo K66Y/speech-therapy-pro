@@ -59,7 +59,7 @@ export const ShortTermPlanView: React.FC<ShortTermPlanViewProps> = ({
   useEffect(() => {
     setData(plan);
   }, [plan]);
-  useEffect(() => setSelectedLetter(plan.targetLetters?.[0] || plan.targetLetter), [student.id]);
+  useEffect(() => setSelectedLetter(plan.targetLetters?.[0] || plan.targetLetter), [student.id, plan.targetLetter, plan.targetLetters]);
 
   const updateObjective = (objId: string, changes: Partial<ShortTermPlan['objectives'][number]>) => {
     const updated = { ...data, objectives: data.objectives.map(obj => obj.id === objId ? { ...obj, ...changes } : obj) };
@@ -162,7 +162,7 @@ export const ShortTermPlanView: React.FC<ShortTermPlanViewProps> = ({
               </p>
             </div>
             <label className="bg-white px-3 py-1.5 rounded-lg border border-teal-200 text-teal-900 font-bold shrink-0 print:hidden">حرف عرض الخطة:
-              <select value={selectedLetter} onChange={e => setSelectedLetter(e.target.value as typeof selectedLetter)} className="mr-2 rounded border border-slate-200 p-1">{Array.from(new Set([...(data.targetLetters || [data.targetLetter]), ...data.objectives.map(obj => obj.targetLetter), ...(student.targetLetters || [])])).map(letter => <option key={letter}>{letter}</option>)}</select>
+              <select value={selectedLetter} onChange={e => setSelectedLetter(e.target.value as typeof selectedLetter)} className="mr-2 rounded border border-slate-200 p-1">{(student.targetLetters?.length ? student.targetLetters : (data.targetLetters || [data.targetLetter])).map(letter => <option key={letter}>{letter}</option>)}</select>
             </label>
           </div>
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import type { User } from 'firebase/auth';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { setDocumentHijriDate } from './services/dateService';
@@ -62,6 +62,7 @@ import { waitForPendingWrites } from 'firebase/firestore';
 import { loadWorkspace, recordLogin, saveWorkspace, type WorkspaceState } from './services/workspaceService';
 
 import { triggerOfficialPrint } from './services/printService';
+import { getDiagnosedTargetLetters, getDiagnosisCategories, sameLetters } from './services/clinicalCaseLink';
 
 type ActiveTab =
   | 'letters'
@@ -226,43 +227,119 @@ function WorkspaceApp({ user }: { user: User | null }) {
   }, [user?.uid, isHydrated, students, caseStudies, assessments, longTermPlans, shortTermPlans, dailySessions, homeworkList, finalReports]);
 
   const currentStudent = students.find(s => s.id === activeStudentId) || students[0];
-  const currentCaseStudy = caseStudies[activeStudentId] || caseStudies['std-001'];
-  const currentAssessment = assessments[activeStudentId] || assessments['std-001'];
-  const currentLTPlan = longTermPlans[activeStudentId] || longTermPlans['std-001'];
-  const currentSTPlan = shortTermPlans[activeStudentId] || shortTermPlans['std-001'];
-  const currentSessions = dailySessions[activeStudentId] || dailySessions['std-001'] || [];
-  const currentHwList = homeworkList[activeStudentId] || homeworkList['std-001'] || [];
-  const currentFinalReport = finalReports[activeStudentId] || finalReports['std-001'];
+  const fallbackRecords = useMemo(
+    () => createNewStudentRecords(currentStudent, currentStudent?.targetLetters?.length ? currentStudent.targetLetters : ['ر']),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [currentStudent?.id, currentStudent?.targetLetters?.join('|')]
+  );
+  // Never borrow another student's record as a fallback; every screen stays scoped to the active case.
+  const currentCaseStudy = caseStudies[activeStudentId] || fallbackRecords.caseStudy;
+  const currentAssessment = assessments[activeStudentId] || fallbackRecords.assessment;
+  const currentLTPlan = longTermPlans[activeStudentId] || fallbackRecords.longTermPlan;
+  const currentSTPlan = shortTermPlans[activeStudentId] || fallbackRecords.shortTermPlan;
+  const currentSessions = dailySessions[activeStudentId] || fallbackRecords.sessions;
+  const currentHwList = homeworkList[activeStudentId] || fallbackRecords.homework;
+  const currentFinalReport = finalReports[activeStudentId] || fallbackRecords.finalReport;
+  const diagnosedTargetLetters = getDiagnosedTargetLetters(currentAssessment);
+  const clinicalTargetLetters = diagnosedTargetLetters.length
+    ? diagnosedTargetLetters
+    : (currentStudent?.targetLetters || []);
+  const clinicalTargetsKey = clinicalTargetLetters.join('|');
+  const clinicalTargets = new Set(clinicalTargetLetters);
+  const linkedCurrentLTPlan = clinicalTargetLetters.length
+    ? { ...currentLTPlan, goals: currentLTPlan.goals.filter(goal => clinicalTargets.has(goal.targetLetter)) }
+    : currentLTPlan;
+  const linkedCurrentSTPlan = clinicalTargetLetters.length
+    ? {
+        ...currentSTPlan,
+        targetLetter: clinicalTargetLetters[0],
+        targetLetters: clinicalTargetLetters,
+        objectives: currentSTPlan.objectives.filter(objective => clinicalTargets.has(objective.targetLetter))
+      }
+    : currentSTPlan;
+  const linkedCurrentFinalReport = clinicalTargetLetters.length
+    ? { ...currentFinalReport, letterProgression: currentFinalReport.letterProgression.filter(progress => clinicalTargets.has(progress.letter)) }
+    : currentFinalReport;
+  const currentTargetHomework = currentHwList.find(homework => clinicalTargets.has(homework.targetLetter)) || currentHwList[0];
 
-  // Keep each selected target letter represented in both plans without replacing saved work.
+  // The diagnosis is the clinical source of truth. It updates the whole student case
+  // while preserving every existing record and every manual edit.
   useEffect(() => {
-    const targets = currentStudent?.targetLetters || [];
+    const targets = clinicalTargetLetters;
     if (!targets.length) return;
+    const diagnosisCategories = getDiagnosisCategories(currentAssessment, targets);
+    const linkedStudent: StudentProfile = {
+      ...currentStudent,
+      targetLetters: targets,
+      diagnosisCategory: diagnosisCategories[0] || currentStudent.diagnosisCategory,
+      diagnosisCategories: diagnosisCategories.length ? diagnosisCategories : currentStudent.diagnosisCategories
+    };
+    const generated = createNewStudentRecords(linkedStudent, targets);
+
+    setAssessments(previous => previous[activeStudentId]
+      ? previous
+      : { ...previous, [activeStudentId]: generated.assessment });
+
+    setStudents(previous => previous.map(student => {
+      if (student.id !== activeStudentId) return student;
+      const categoriesUnchanged = (student.diagnosisCategories || []).join('|') === diagnosisCategories.join('|');
+      if (sameLetters(student.targetLetters, targets) && categoriesUnchanged) return student;
+      return linkedStudent;
+    }));
+
+    setCaseStudies(previous => {
+      const study = previous[activeStudentId];
+      if (!study) return { ...previous, [activeStudentId]: generated.caseStudy };
+      if (sameLetters(study.student.targetLetters, targets)
+        && (study.student.diagnosisCategories || []).join('|') === diagnosisCategories.join('|')) return previous;
+      return { ...previous, [activeStudentId]: { ...study, student: linkedStudent } };
+    });
+
     setLongTermPlans(previous => {
       const plan = previous[activeStudentId];
-      if (!plan) return previous;
+      if (!plan) return { ...previous, [activeStudentId]: generated.longTermPlan };
       const missing = targets.filter(letter => !plan.goals.some(goal => goal.targetLetter === letter));
       if (!missing.length) return previous;
-      const template = plan.goals[0];
-      const additions = missing.map((letter, index) => {
-        const replace = (value = '') => value.split(template?.targetLetter || letter).join(letter);
-        return { ...template, id: `ltg-${activeStudentId}-${letter}-${Date.now()}-${index}`, code: `هدف عام ${plan.goals.length + index + 1}`, targetLetter: letter, goalDescription: replace(template?.goalDescription), startingBaseline: replace(template?.startingBaseline), finalExpectedOutcome: replace(template?.finalExpectedOutcome), status: 'in_progress' as const, progressPercentage: 0 };
-      });
+      const additions = generated.longTermPlan.goals.filter(goal => missing.includes(goal.targetLetter));
       return { ...previous, [activeStudentId]: { ...plan, goals: [...plan.goals, ...additions] } };
     });
     setShortTermPlans(previous => {
       const plan = previous[activeStudentId];
-      if (!plan) return previous;
+      if (!plan) return { ...previous, [activeStudentId]: generated.shortTermPlan };
       const missing = targets.filter(letter => !plan.objectives.some(objective => objective.targetLetter === letter));
       if (!missing.length && targets.every(letter => plan.targetLetters?.includes(letter))) return previous;
-      const template = plan.objectives[0];
-      const additions = missing.map((letter, index) => {
-        const replace = (value = '') => value.split(template?.targetLetter || letter).join(letter);
-        return { ...template, id: `sto-${activeStudentId}-${letter}-${Date.now()}-${index}`, stepNumber: 1, targetLetter: letter, objectiveText: replace(template?.objectiveText), mirrorUsageDetails: replace(template?.mirrorUsageDetails), tongueDepressorDetails: replace(template?.tongueDepressorDetails), status: 'in_progress' as const, currentPercentage: 0 };
-      });
+      const additions = generated.shortTermPlan.objectives.filter(objective => missing.includes(objective.targetLetter));
       return { ...previous, [activeStudentId]: { ...plan, targetLetter: targets[0], targetLetters: targets, objectives: [...plan.objectives, ...additions] } };
     });
-  }, [activeStudentId, currentStudent?.targetLetters?.join('،')]);
+
+    setDailySessions(previous => {
+      const records = previous[activeStudentId] || [];
+      const missing = targets.filter(letter => !records.some(session => session.targetLetter === letter));
+      if (!missing.length) return previous;
+      const additions = generated.sessions.filter(session => missing.includes(session.targetLetter));
+      return { ...previous, [activeStudentId]: [...records, ...additions] };
+    });
+
+    setHomeworkList(previous => {
+      const records = previous[activeStudentId] || [];
+      const missing = targets.filter(letter => !records.some(homework => homework.targetLetter === letter));
+      if (!missing.length) return previous;
+      const additions = generated.homework.filter(homework => missing.includes(homework.targetLetter));
+      return { ...previous, [activeStudentId]: [...records, ...additions] };
+    });
+
+    setFinalReports(previous => {
+      const report = previous[activeStudentId];
+      if (!report) return { ...previous, [activeStudentId]: generated.finalReport };
+      const missing = targets.filter(letter => !report.letterProgression.some(progress => progress.letter === letter));
+      if (!missing.length) return previous;
+      const template = generated.finalReport.letterProgression[0];
+      const additions = missing.map(letter => ({ ...template, letter, beforeRate: 0, afterRate: 0, status: 'قيد التدريب' as const }));
+      return { ...previous, [activeStudentId]: { ...report, letterProgression: [...report.letterProgression, ...additions] } };
+    });
+  // Primitive keys prevent a loop when the linked student object is updated.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeStudentId, clinicalTargetsKey, currentAssessment]);
 
   if (!isHydrated && syncStatus !== 'error') return <div dir="rtl" className="min-h-screen bg-slate-950 text-white grid place-items-center font-bold">جارٍ تحميل سجلاتك المحفوظة...</div>;
 
@@ -299,7 +376,7 @@ function WorkspaceApp({ user }: { user: User | null }) {
     setIsExporting(true);
     try {
       const { exportPlansDocx } = await import('./services/docxExportService');
-      await exportPlansDocx(currentStudent, currentLTPlan, currentSTPlan);
+      await exportPlansDocx(currentStudent, linkedCurrentLTPlan, linkedCurrentSTPlan);
     } catch (e) {
       console.error(e);
       window.alert('تعذر تجهيز ملف Word. تحقق من الاتصال ثم أعد المحاولة. إذا استمر الخطأ، أرسل صورة الرسالة.');
@@ -456,9 +533,9 @@ function WorkspaceApp({ user }: { user: User | null }) {
                         onClick={async () => {
                           setIsExporting(true);
                           try {
-                          if (currentHwList[0]) {
+                          if (currentTargetHomework) {
                             const { exportHomeworkDocx } = await import('./services/docxExportService');
-                            await exportHomeworkDocx(currentStudent, currentHwList[0]);
+                            await exportHomeworkDocx(currentStudent, currentTargetHomework);
                           }
                           
                           } catch (error) { console.error(error); window.alert('تعذر تصدير Word. أعد المحاولة بعد التحقق من الاتصال.'); }
@@ -474,7 +551,7 @@ function WorkspaceApp({ user }: { user: User | null }) {
                           setIsExporting(true);
                           try {
                           const { exportFinalReportDocx } = await import('./services/docxExportService');
-                          await exportFinalReportDocx(currentStudent, currentFinalReport);
+                          await exportFinalReportDocx(currentStudent, linkedCurrentFinalReport);
                           
                           } catch (error) { console.error(error); window.alert('تعذر تصدير Word. أعد المحاولة بعد التحقق من الاتصال.'); }
                           finally { setIsExporting(false); setIsExportMenuOpen(false); }
@@ -586,7 +663,7 @@ function WorkspaceApp({ user }: { user: User | null }) {
         {activeTab === 'longterm' && (
           <LongTermPlanView key={activeStudentId}
             student={currentStudent}
-            plan={currentLTPlan}
+            plan={linkedCurrentLTPlan}
             onUpdatePlan={updated =>
               setLongTermPlans(prev => ({ ...prev, [activeStudentId]: updated }))
             }
@@ -599,7 +676,7 @@ function WorkspaceApp({ user }: { user: User | null }) {
         {activeTab === 'shortterm' && (
           <ShortTermPlanView key={activeStudentId}
             student={currentStudent}
-            plan={currentSTPlan}
+            plan={linkedCurrentSTPlan}
             onUpdatePlan={updated =>
               setShortTermPlans(prev => ({ ...prev, [activeStudentId]: updated }))
             }
@@ -637,7 +714,7 @@ function WorkspaceApp({ user }: { user: User | null }) {
         {activeTab === 'finalreport' && (
           <FinalReportView
             student={currentStudent}
-            report={currentFinalReport}
+            report={linkedCurrentFinalReport}
             onUpdateReport={updated =>
               setFinalReports(prev => ({ ...prev, [activeStudentId]: updated }))
             }

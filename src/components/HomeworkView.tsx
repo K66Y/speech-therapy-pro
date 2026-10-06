@@ -60,9 +60,11 @@ export const HomeworkView: React.FC<HomeworkViewProps> = ({
 
   const [isExporting, setIsExporting] = useState(false);
   useEffect(() => {
-    const matching = homeworkList.find(item => item.id === activeHw.id) || homeworkList[0];
+    const targetSet = new Set(student.targetLetters || []);
+    const matching = homeworkList.find(item => item.id === activeHw.id && (!targetSet.size || targetSet.has(item.targetLetter)))
+      || homeworkList.find(item => !targetSet.size || targetSet.has(item.targetLetter));
     if (matching) setActiveHw(matching);
-  }, [student.id, homeworkList]);
+  }, [student.id, student.targetLetters, homeworkList, activeHw.id]);
   useEffect(() => {
     if (!shouldUpgradeParentTrainingGuide(activeHw.mirrorInstructionAtHome)) return;
     const mirrorInstructionAtHome = parentTrainingGuide(activeHw.targetLetter);
