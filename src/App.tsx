@@ -451,7 +451,6 @@ function WorkspaceApp({ user }: { user: User | null }) {
 
               {/* Add New Student Button */}
 
-              {students.some(student => student.deletedAt) && <details className="rounded-xl bg-white p-2 text-xs text-sky-900"><summary>الطلاب المحذوفون — استرجاع</summary>{students.filter(student => student.deletedAt).map(student => <button key={student.id} type="button" className="block p-2 underline" onClick={() => { setStudents(previous => previous.map(item => item.id === student.id ? { ...item, deletedAt: null } : item)); setActiveStudentId(student.id); }}>استرجاع {student.fullName}</button>)}</details>}
               <button
                 onClick={() => setIsNewStudentModalOpen(true)}
                 className="flex w-full sm:w-auto items-center justify-center gap-1.5 bg-sky-600 hover:bg-sky-500 text-white font-black text-xs px-3 py-2 rounded-xl shadow-xs transition-all active:scale-95 cursor-pointer"
@@ -599,6 +598,27 @@ function WorkspaceApp({ user }: { user: User | null }) {
                       <span>{!user ? 'حفظ محلي مؤقت' : syncStatus === 'saving' ? 'جارٍ الحفظ' : syncStatus === 'saved' ? 'محفوظ سحابيًا' : syncStatus === 'error' ? 'تعذر الحفظ السحابي' : 'جارٍ التحميل'}</span>
                     </div>
                     <button onClick={() => { downloadBackup(); setIsAccountMenuOpen(false); }} className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-xs font-black text-emerald-800 hover:bg-emerald-50"><DatabaseBackup className="h-4 w-4" /><span>تنزيل نسخة احتياطية</span></button>
+                    {students.some(student => student.deletedAt) && (
+                      <details className="mt-1 border-t border-slate-100 pt-1 text-xs">
+                        <summary className="flex cursor-pointer list-none items-center gap-2 rounded-xl px-3 py-2.5 font-black text-sky-900 hover:bg-sky-50">
+                          <Users className="h-4 w-4" />
+                          <span>الطلاب المحذوفون</span>
+                          <span className="mr-auto rounded-full bg-sky-100 px-2 py-0.5 text-[10px]">{students.filter(student => student.deletedAt).length}</span>
+                        </summary>
+                        <div className="mt-1 space-y-1 rounded-xl bg-slate-50 p-2">
+                          {students.filter(student => student.deletedAt).map(student => (
+                            <button key={student.id} type="button" className="flex w-full items-center justify-between rounded-lg bg-white px-3 py-2 text-right font-bold text-sky-900 hover:bg-emerald-50" onClick={() => {
+                              setStudents(previous => previous.map(item => item.id === student.id ? { ...item, deletedAt: null } : item));
+                              setActiveStudentId(student.id);
+                              setIsAccountMenuOpen(false);
+                            }}>
+                              <span>{student.fullName}</span>
+                              <span className="text-[10px] text-emerald-700">استرجاع</span>
+                            </button>
+                          ))}
+                        </div>
+                      </details>
+                    )}
                     {user && <AccountPasswordSetup user={user} />}
                     {user && <button onClick={async () => { if (!auth || !isHydrated) return; setSyncStatus('saving'); try { await saveWorkspace(user.uid, { students, caseStudies, assessments, longTermPlans, shortTermPlans, dailySessions, homeworkList, finalReports }); if (db) await waitForPendingWrites(db); await signOut(auth); } catch { setSyncStatus('error'); window.alert('لم يكتمل حفظ آخر التعديلات. لم نسجل خروجك لحماية بياناتك؛ تحقق من الاتصال وأعد المحاولة.'); } }} className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-xs font-black text-red-700 hover:bg-red-50"><LogOut className="h-4 w-4" /><span>تسجيل الخروج</span></button>}
                   </div>
