@@ -136,6 +136,32 @@
     padding: 5px !important;
   }
 
+  /* Keep the target-letter column compact in print without changing the website layout. */
+  .homework-words-table th:first-child,
+  .homework-words-table td:first-child {
+    width: 8% !important;
+  }
+
+  .homework-words-table th:nth-child(2),
+  .homework-words-table td:nth-child(2),
+  .homework-words-table th:nth-child(3),
+  .homework-words-table td:nth-child(3),
+  .homework-words-table th:nth-child(4),
+  .homework-words-table td:nth-child(4) {
+    width: 22% !important;
+  }
+
+  .homework-words-table th:nth-child(5),
+  .homework-words-table td:nth-child(5) {
+    width: 26% !important;
+  }
+
+  .homework-words-table .homework-letter-cell {
+    font-size: 16pt !important;
+    line-height: 1 !important;
+    padding: 3px !important;
+  }
+
   /* Hide UI elements during print */
   header,
   nav,

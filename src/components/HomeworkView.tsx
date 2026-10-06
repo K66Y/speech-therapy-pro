@@ -188,7 +188,7 @@ export const HomeworkView: React.FC<HomeworkViewProps> = ({
               <thead><tr className="bg-emerald-900 text-white">{['الحرف', 'أول الكلمة (3 نماذج)', 'وسط الكلمة (3 نماذج)', 'آخر الكلمة (3 نماذج)', 'التكرار اليومي'].map(title => <th key={title} className="p-3 border text-center">{title}</th>)}</tr></thead>
               <tbody>
                 <tr className="bg-white">
-                  <td className="border border-slate-200 p-4 text-center text-2xl font-black text-emerald-950">{activeHw.targetLetter}</td>
+                  <td className="homework-letter-cell border border-slate-200 p-4 text-center text-2xl font-black text-emerald-950">{activeHw.targetLetter}</td>
                   {practiceColumns.map((words, positionIndex) => <td key={homeworkPositions[positionIndex]} className="border border-slate-200 p-3 align-top">
                     <div className="flex flex-wrap justify-center gap-2">
                       {words.slice(0, 3).map((word, wordIndex) => <div key={`${positionIndex}-${wordIndex}`} className="min-w-24 rounded-lg bg-slate-50 px-2 py-1.5 text-center font-bold">
