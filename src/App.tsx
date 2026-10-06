@@ -384,7 +384,7 @@ function WorkspaceApp({ user }: { user: User | null }) {
               </button>
 
               {isAccountMenuOpen && (
-                  <div className="fixed left-3 top-[4.25rem] w-72 rounded-2xl bg-white p-3 text-right text-slate-800 shadow-2xl border border-sky-200 z-[70]" dir="rtl">
+                  <div className="absolute left-3 top-[4.25rem] w-72 rounded-2xl bg-white p-3 text-right text-slate-800 shadow-2xl border border-sky-200 z-[70]" dir="rtl">
                     <div className="flex items-center gap-2 border-b border-slate-100 pb-3 mb-3">
                       <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-sky-100 text-sky-800">
                         <ShieldCheck className="w-5 h-5" />
@@ -532,7 +532,7 @@ function WorkspaceApp({ user }: { user: User | null }) {
             </div>
           </div>
         </div>
-        <div className="fixed left-2 top-2 sm:left-3 sm:top-3 z-[80] print:hidden">
+        <div className="absolute left-2 top-2 sm:left-3 sm:top-3 z-[80] print:hidden">
           <button
             onClick={() => setIsAccountMenuOpen(open => !open)}
             className="flex items-center gap-1 sm:gap-2 rounded-full border border-white/20 bg-white/95 px-1.5 sm:px-2.5 py-1.5 text-sky-950 shadow-lg hover:bg-white"

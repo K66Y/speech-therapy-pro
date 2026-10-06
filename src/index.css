@@ -123,6 +123,19 @@
     box-shadow: none !important;
   }
 
+  .printable-sheet .overflow-x-auto > .homework-words-table {
+    width: 100% !important;
+    min-width: 0 !important;
+    table-layout: fixed !important;
+    font-size: 8.5pt !important;
+  }
+
+  .homework-words-table th,
+  .homework-words-table td {
+    text-align: center !important;
+    padding: 5px !important;
+  }
+
   /* Hide UI elements during print */
   header,
   nav,

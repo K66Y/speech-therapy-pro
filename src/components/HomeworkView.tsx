@@ -98,6 +98,12 @@ export const HomeworkView: React.FC<HomeworkViewProps> = ({
       setIsExporting(false);
     }
   };
+  const practiceColumns = homeworkColumns(activeHw);
+  const savePracticeWord = (positionIndex: number, wordIndex: number, value: string) => {
+    const columns = homeworkColumns(activeHw);
+    columns[positionIndex][wordIndex] = { ...columns[positionIndex][wordIndex], word: value };
+    updateHomework({ wordsToPractice: columns.flat() });
+  };
 
   return (
     <div className="space-y-6">
@@ -176,21 +182,25 @@ export const HomeworkView: React.FC<HomeworkViewProps> = ({
           </h3>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-right border-collapse text-xs border border-slate-200 rounded-xl overflow-hidden">
-              <thead><tr className="bg-emerald-900 text-white">{['الكلمة الأولى', 'الكلمة الثانية', 'الكلمة الثالثة', 'التكرار اليومي'].map(title => <th key={title} className="p-3 border">{title}</th>)}</tr></thead>
+            <table className="homework-words-table w-full min-w-[900px] text-right border-collapse text-xs border border-slate-200 rounded-xl overflow-hidden">
+              <thead><tr className="bg-emerald-900 text-white">{['الحرف', 'أول الكلمة (3 نماذج)', 'وسط الكلمة (3 نماذج)', 'آخر الكلمة (3 نماذج)', 'التكرار اليومي'].map(title => <th key={title} className="p-3 border text-center">{title}</th>)}</tr></thead>
               <tbody>
-                {homeworkColumns(activeHw).map((words, positionIndex) => <tr key={homeworkPositions[positionIndex]}>
-                  {words.slice(0, 3).map((word, wordIndex) => <td key={wordIndex} className="border border-slate-200 p-3 text-center">
-                    {wordIndex === 0 && <strong className="block mb-2 text-emerald-900">{homeworkPositions[positionIndex]}</strong>}
-                    <EditableText label="كلمة الواجب" value={word.word} suggestions={ARABIC_LETTERS_MAP[activeHw.targetLetter].examples[positionIndex === 0 ? 'beginning' : positionIndex === 1 ? 'middle' : 'end'].words.map(item => item.word)} onSave={value => {
-                      const columns = homeworkColumns(activeHw); columns[positionIndex][wordIndex] = { ...word, word: value }; updateHomework({ wordsToPractice: columns.flat() });
-                    }} onDelete={() => { const columns = homeworkColumns(activeHw); columns[positionIndex][wordIndex] = { ...word, word: '' }; updateHomework({ wordsToPractice: columns.flat() }); }} />
+                <tr className="bg-white">
+                  <td className="border border-slate-200 p-4 text-center text-2xl font-black text-emerald-950">{activeHw.targetLetter}</td>
+                  {practiceColumns.map((words, positionIndex) => <td key={homeworkPositions[positionIndex]} className="border border-slate-200 p-3 align-top">
+                    <div className="flex flex-wrap justify-center gap-2">
+                      {words.slice(0, 3).map((word, wordIndex) => <div key={`${positionIndex}-${wordIndex}`} className="min-w-24 rounded-lg bg-slate-50 px-2 py-1.5 text-center font-bold">
+                        <EditableText label={`${homeworkPositions[positionIndex]} - الكلمة ${wordIndex + 1}`} value={word.word} suggestions={ARABIC_LETTERS_MAP[activeHw.targetLetter].examples[positionIndex === 0 ? 'beginning' : positionIndex === 1 ? 'middle' : 'end'].words.map(item => item.word)} onSave={value => savePracticeWord(positionIndex, wordIndex, value)} onDelete={() => savePracticeWord(positionIndex, wordIndex, '')} />
+                      </div>)}
+                    </div>
                   </td>)}
-                  <td className="border border-slate-200 p-3 text-center"><div className="flex justify-center gap-2" aria-label="خمس خانات لوضع علامة صح بعد التكرار">{Array.from({ length: 5 }, (_, i) => <span key={i} className="inline-block w-5 h-5 border border-slate-500 rounded-sm bg-white" />)}</div></td>
-                </tr>)}
+                  <td className="border border-slate-200 p-3 align-top">
+                    <div className="space-y-3">{homeworkPositions.map(position => <div key={position} className="space-y-1 text-center"><span className="block text-[10px] font-bold text-emerald-900">{position}</span><div className="flex justify-center gap-1.5" aria-label={`خمس خانات لتكرار ${position}`}>{Array.from({ length: 5 }, (_, i) => <span key={i} className="inline-block h-5 w-5 rounded-sm border border-slate-500 bg-white" />)}</div></div>)}</div>
+                  </td>
+                </tr>
               </tbody>
             </table>
-            {homeworkColumns(activeHw).some(words => words.length > 3) && <details className="print:hidden mt-3 text-xs"><summary>كلمات إضافية محفوظة خارج جدول الطباعة</summary>{homeworkColumns(activeHw).map((words, pos) => words.slice(3).map((word, index) => <EditableText key={`${pos}-${index}`} label="كلمة إضافية" value={word.word} onSave={value => { const columns = homeworkColumns(activeHw); columns[pos][index + 3] = { ...word, word: value }; updateHomework({ wordsToPractice: columns.flat() }); }} onDelete={() => { const columns = homeworkColumns(activeHw); columns[pos].splice(index + 3, 1); updateHomework({ wordsToPractice: columns.flat() }); }} />))}</details>}
+            {practiceColumns.some(words => words.length > 3) && <details className="print:hidden mt-3 text-xs"><summary>كلمات إضافية محفوظة خارج جدول الطباعة</summary>{practiceColumns.map((words, pos) => words.slice(3).map((word, index) => <EditableText key={`${pos}-${index}`} label="كلمة إضافية" value={word.word} onSave={value => savePracticeWord(pos, index + 3, value)} onDelete={() => { const columns = homeworkColumns(activeHw); columns[pos].splice(index + 3, 1); updateHomework({ wordsToPractice: columns.flat() }); }} />))}</details>}
           </div>
         </div>
 

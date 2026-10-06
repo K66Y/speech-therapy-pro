@@ -875,11 +875,18 @@ export async function exportHomeworkDocx(student: StudentProfile, homework: Home
             ]
           }),
           createRtlTable([
-            new TableRow({ children: ['الكلمة الأولى', 'الكلمة الثانية', 'الكلمة الثالثة', 'التكرار اليومي'].map(title => createStyledCell(title, 25, true)) }),
-            ...homeworkColumns(homework).map((words, positionIndex) => new TableRow({ children: [
-              ...words.slice(0, 3).map((word, index) => createStyledCell((index === 0 ? homeworkPositions[positionIndex] + '\n' : '') + word.word, 25)),
-              createStyledCell('□ □ □ □ □', 25)
-            ] }))
+            new TableRow({ children: [
+              createStyledCell('الحرف', 10, true),
+              createStyledCell('أول الكلمة (3 نماذج)', 22, true),
+              createStyledCell('وسط الكلمة (3 نماذج)', 22, true),
+              createStyledCell('آخر الكلمة (3 نماذج)', 22, true),
+              createStyledCell('التكرار اليومي', 24, true)
+            ] }),
+            new TableRow({ children: [
+              createStyledCell(homework.targetLetter, 10, false, true, PRIMARY_COLOR),
+              ...homeworkColumns(homework).map(words => createStyledCell(words.slice(0, 3).map(word => word.word).join('\n'), 22)),
+              createStyledCell(homeworkPositions.map(position => `${position}: □ □ □ □ □`).join('\n'), 24)
+            ] })
           ]),
           new Paragraph({
             alignment: AlignmentType.RIGHT,
