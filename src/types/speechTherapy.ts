@@ -145,6 +145,25 @@ export interface DiagnosticAssessment {
   primaryErrors: string[];
   summaryConclusion: string;
   summaryNeedsReview?: boolean;
+  extendedAssessments?: DiagnosticDomains;
+  recommendationDecision?: 'needs_training' | 'no_training';
+  recommendationText?: string;
+}
+
+export type DiagnosticDomainStatus = 'لم يُقيّم' | 'ضمن المتوقع' | 'يحتاج متابعة' | 'بحاجة إلى تدريب';
+
+export interface DiagnosticDomainAssessment {
+  status: DiagnosticDomainStatus;
+  skills: string;
+  evaluation: string;
+}
+
+export interface DiagnosticDomains {
+  fluency: DiagnosticDomainAssessment;
+  receptiveLanguage: DiagnosticDomainAssessment;
+  expressiveLanguage: DiagnosticDomainAssessment;
+  vocabulary: DiagnosticDomainAssessment;
+  eyeContact: DiagnosticDomainAssessment;
 }
 
 export interface LongTermPlanGoal {

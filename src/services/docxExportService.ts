@@ -31,6 +31,7 @@ import { ARABIC_LETTERS_LIST, ARABIC_LETTERS_MAP } from '../data/arabicLettersDa
 import { SCHOOL_KLICHE } from '../data/sampleData';
 import { getDocumentHijriDate, getDocumentGregorianDate } from './dateService';
 import { displayText } from './displayText';
+import { diagnosticDomainsFor, recommendationFor } from '../data/diagnosticDomains';
 
 class TextRun extends DocxTextRun {
   constructor(options: ConstructorParameters<typeof DocxTextRun>[0]) {
@@ -394,6 +395,15 @@ export async function exportCaseStudyDocx(caseStudy: CaseStudyData) {
  * تصدير استمارة التشخيص والتقييم النطقي الشامل (.docx)
  */
 export async function exportDiagnosisDocx(student: StudentProfile, assessment: DiagnosticAssessment) {
+  const supportingDomains = diagnosticDomainsFor(assessment);
+  const recommendation = recommendationFor(assessment);
+  const supportingSections = [
+    ['تقييم اضطرابات الطلاقة', supportingDomains.fluency],
+    ['مهارات وتقييم اللغة الاستقبالية', supportingDomains.receptiveLanguage],
+    ['مهارات وتقييم اللغة التعبيرية', supportingDomains.expressiveLanguage],
+    ['تقييم الحصيلة اللغوية', supportingDomains.vocabulary],
+    ['تقييم التواصل البصري', supportingDomains.eyeContact]
+  ] as const;
   const rows = [
     new TableRow({
       children: [
@@ -459,6 +469,57 @@ export async function exportDiagnosisDocx(student: StudentProfile, assessment: D
           }),
 
           createRtlTable(rows),
+
+          new Paragraph({
+            heading: HeadingLevel.HEADING_2,
+            alignment: AlignmentType.RIGHT,
+            bidirectional: true,
+            spacing: { before: 220, after: 100 },
+            children: [new TextRun({ text: 'التقييمات الوظيفية واللغوية المساندة', font: 'Cairo', bold: true, color: PRIMARY_COLOR, size: 24, rightToLeft: true })]
+          }),
+          ...supportingSections.flatMap(([title, domain]) => [
+            new Paragraph({
+              alignment: AlignmentType.RIGHT,
+              bidirectional: true,
+              spacing: { before: 100, after: 45 },
+              children: [
+                new TextRun({ text: `${title} — الحالة: ${domain.status}`, font: 'Cairo', bold: true, color: PRIMARY_COLOR, rightToLeft: true })
+              ]
+            }),
+            new Paragraph({
+              alignment: AlignmentType.RIGHT,
+              bidirectional: true,
+              spacing: { after: 35 },
+              children: [
+                new TextRun({ text: `المهارات والمؤشرات: ${domain.skills}`, font: 'Cairo', rightToLeft: true })
+              ]
+            }),
+            new Paragraph({
+              alignment: AlignmentType.RIGHT,
+              bidirectional: true,
+              spacing: { after: 70 },
+              children: [
+                new TextRun({ text: `نتيجة التقييم: ${domain.evaluation}`, font: 'Cairo', rightToLeft: true })
+              ]
+            })
+          ]),
+
+          new Paragraph({
+            heading: HeadingLevel.HEADING_2,
+            alignment: AlignmentType.RIGHT,
+            bidirectional: true,
+            spacing: { before: 160, after: 70 },
+            children: [new TextRun({ text: 'التوصية التشخيصية', font: 'Cairo', bold: true, color: PRIMARY_COLOR, size: 24, rightToLeft: true })]
+          }),
+          new Paragraph({
+            alignment: AlignmentType.RIGHT,
+            bidirectional: true,
+            spacing: { after: 120 },
+            children: [
+              new TextRun({ text: recommendation.decision === 'needs_training' ? 'يوصى بحاجة الطالب إلى تدريب. ' : 'لا يحتاج إلى تدريب. ', font: 'Cairo', bold: true, rightToLeft: true }),
+              new TextRun({ text: recommendation.text, font: 'Cairo', rightToLeft: true })
+            ]
+          }),
 
           new Paragraph({
             heading: HeadingLevel.HEADING_2,

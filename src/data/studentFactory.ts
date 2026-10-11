@@ -13,6 +13,7 @@ import { ARABIC_LETTERS_LIST, ARABIC_LETTERS_MAP } from './arabicLettersData';
 import { SPECIALIST_NAME, SCHOOL_KLICHE } from './sampleData';
 import { getLiveHijriDate } from '../services/dateService';
 import { parentTrainingGuide } from '../services/parentTrainingGuide';
+import { DEFAULT_DIAGNOSTIC_DOMAINS } from './diagnosticDomains';
 
 export function createNewStudentRecords(student: StudentProfile, targetLettersInput: ArabicLetterKey[] | ArabicLetterKey) {
   const targetLetters = Array.isArray(targetLettersInput) ? [...new Set(targetLettersInput)] : [targetLettersInput];
@@ -107,7 +108,10 @@ export function createNewStudentRecords(student: StudentProfile, targetLettersIn
     lettersResults,
     speechIntelligibilityScore: 88,
     primaryErrors: targetLetters.map(letter => `اضطراب نطق صوت حرف (${letter}) في أول ووسط وآخر الكلمة`),
-    summaryConclusion: `أظهر التقييم التشخيصي وجود اضطراب نطق في الأصوات المستهدفة (${targetLetters.join('، ')}) بنسبة وضوح كلام إجمالية بلغت 88%. التوصية: خطة علاجية مخصصة باستخدام المرآة وخافض اللسان.`
+    summaryConclusion: `أظهر التقييم التشخيصي وجود اضطراب نطق في الأصوات المستهدفة (${targetLetters.join('، ')}) بنسبة وضوح كلام إجمالية بلغت 88%. التوصية: خطة علاجية مخصصة باستخدام المرآة وخافض اللسان.`,
+    extendedAssessments: structuredClone(DEFAULT_DIAGNOSTIC_DOMAINS),
+    recommendationDecision: 'needs_training',
+    recommendationText: 'يوصى بحاجة الطالب إلى تدريب متخصص وفق نتائج التقييم، مع متابعة التقدم وتحديث الأهداف بما يتناسب مع استجابته.'
   };
 
   // 3. الخطة طويلة المدى

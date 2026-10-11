@@ -55,11 +55,15 @@ export const ShortTermPlanView: React.FC<ShortTermPlanViewProps> = ({
   const [addedObjectiveId, setAddedObjectiveId] = useState('');
   useEffect(() => { if (addedObjectiveId) document.getElementById(addedObjectiveId)?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, [addedObjectiveId]);
   const [selectedLetter, setSelectedLetter] = useState<ArabicLetterKey>(plan.targetLetters?.[0] || plan.targetLetter);
+  const selectableLetters = student.targetLetters?.length ? student.targetLetters : (plan.targetLetters?.length ? plan.targetLetters : [plan.targetLetter]);
+  const selectableLettersKey = selectableLetters.join('|');
 
   useEffect(() => {
     setData(plan);
   }, [plan]);
-  useEffect(() => setSelectedLetter(plan.targetLetters?.[0] || plan.targetLetter), [student.id, plan.targetLetter, plan.targetLetters]);
+  useEffect(() => {
+    setSelectedLetter(current => selectableLetters.includes(current) ? current : (selectableLetters[0] || plan.targetLetter));
+  }, [student.id, selectableLettersKey, plan.targetLetter]);
 
   const updateObjective = (objId: string, changes: Partial<ShortTermPlan['objectives'][number]>) => {
     const updated = { ...data, objectives: data.objectives.map(obj => obj.id === objId ? { ...obj, ...changes } : obj) };
@@ -162,7 +166,7 @@ export const ShortTermPlanView: React.FC<ShortTermPlanViewProps> = ({
               </p>
             </div>
             <label className="bg-white px-3 py-1.5 rounded-lg border border-teal-200 text-teal-900 font-bold shrink-0 print:hidden">حرف عرض الخطة:
-              <select value={selectedLetter} onChange={e => setSelectedLetter(e.target.value as typeof selectedLetter)} className="mr-2 rounded border border-slate-200 p-1">{(student.targetLetters?.length ? student.targetLetters : (data.targetLetters || [data.targetLetter])).map(letter => <option key={letter}>{letter}</option>)}</select>
+              <select value={selectedLetter} onChange={e => setSelectedLetter(e.target.value as typeof selectedLetter)} className="mr-2 rounded border border-slate-200 p-1">{selectableLetters.map(letter => <option key={letter}>{letter}</option>)}</select>
             </label>
           </div>
 

@@ -5,9 +5,12 @@ import React, { useEffect, useState } from 'react';
 import {
   StudentProfile,
   DiagnosticAssessment,
-  ArabicLetterKey
+  ArabicLetterKey,
+  DiagnosticDomains,
+  DiagnosticDomainStatus
 } from '../types/speechTherapy';
 import { ARABIC_LETTERS_LIST, ARABIC_LETTERS_MAP } from '../data/arabicLettersData';
+import { diagnosticDomainsFor, recommendationFor } from '../data/diagnosticDomains';
 import { SCHOOL_KLICHE } from '../data/sampleData';
 import { OfficialHeader } from './OfficialHeader';
 import { triggerOfficialPrint } from '../services/printService';
@@ -31,6 +34,21 @@ interface DiagnosisViewProps {
   onUpdateAssessment: (updated: DiagnosticAssessment) => void;
 }
 
+const DIAGNOSTIC_DOMAIN_SECTIONS: Array<{
+  key: keyof DiagnosticDomains;
+  title: string;
+  skillsLabel: string;
+  evaluationLabel: string;
+}> = [
+  { key: 'fluency', title: 'تقييم اضطرابات الطلاقة', skillsLabel: 'مؤشرات ومهارات الطلاقة', evaluationLabel: 'نتيجة تقييم الطلاقة' },
+  { key: 'receptiveLanguage', title: 'اللغة الاستقبالية', skillsLabel: 'مهارات اللغة الاستقبالية', evaluationLabel: 'تقييم اللغة الاستقبالية' },
+  { key: 'expressiveLanguage', title: 'اللغة التعبيرية', skillsLabel: 'مهارات اللغة التعبيرية', evaluationLabel: 'تقييم اللغة التعبيرية' },
+  { key: 'vocabulary', title: 'تقييم الحصيلة اللغوية', skillsLabel: 'مهارات الحصيلة اللغوية', evaluationLabel: 'نتيجة تقييم الحصيلة اللغوية' },
+  { key: 'eyeContact', title: 'تقييم التواصل البصري', skillsLabel: 'مهارات التواصل البصري', evaluationLabel: 'نتيجة تقييم التواصل البصري' }
+];
+
+const DIAGNOSTIC_DOMAIN_STATUSES: DiagnosticDomainStatus[] = ['لم يُقيّم', 'ضمن المتوقع', 'يحتاج متابعة', 'بحاجة إلى تدريب'];
+
 export const DiagnosisView: React.FC<DiagnosisViewProps> = ({
   student,
   assessment,
@@ -39,7 +57,6 @@ export const DiagnosisView: React.FC<DiagnosisViewProps> = ({
   const [data, setData] = useState<DiagnosticAssessment>(assessment);
   const [selectedLetter, setSelectedLetter] = useState<ArabicLetterKey>(student.targetLetters?.[0] || 'ر');
   useEffect(() => setData(assessment), [assessment]);
-  useEffect(() => { setSelectedLetter(student.targetLetters?.[0] || 'ر'); setLetterView(student.targetLetters?.length ? 'targets' : 'all'); }, [student.id, student.targetLetters]);
   const [searchTerm, setSearchTerm] = useState('');
   const [errorOnlyFilter, setErrorOnlyFilter] = useState(false);
   const [letterView, setLetterView] = useState<'all' | 'targets' | 'single'>(() => student.targetLetters?.length ? 'targets' : 'all');
@@ -47,6 +64,16 @@ export const DiagnosisView: React.FC<DiagnosisViewProps> = ({
   const [generatedNotice, setGeneratedNotice] = useState(false);
   const [isManualScoreMode, setIsManualScoreMode] = useState(false);
   const [activeLetterNotes, setActiveLetterNotes] = useState<ArabicLetterKey | null>(null);
+  const targetLettersKey = (student.targetLetters || []).join('|');
+
+  useEffect(() => {
+    const availableLetters = student.targetLetters?.length ? student.targetLetters : ARABIC_LETTERS_LIST;
+    setSelectedLetter(current => availableLetters.includes(current) ? current : (availableLetters[0] || 'ر'));
+  }, [student.id, targetLettersKey]);
+
+  useEffect(() => {
+    setLetterView(student.targetLetters?.length ? 'targets' : 'all');
+  }, [student.id]);
 
   // حساب نسبة وضوح الكلام العامة تلقائياً
   const calculateScore = (results = data.lettersResults) => {
@@ -78,6 +105,29 @@ export const DiagnosisView: React.FC<DiagnosisViewProps> = ({
     const committed = { ...updated, speechIntelligibilityScore: isManualScoreMode ? updated.speechIntelligibilityScore : calculateScore(updated.lettersResults) };
     setData(committed);
     onUpdateAssessment(committed);
+  };
+
+  const domains = diagnosticDomainsFor(data);
+  const recommendation = recommendationFor(data);
+
+  const updateDomain = (
+    key: keyof DiagnosticDomains,
+    changes: Partial<DiagnosticDomains[keyof DiagnosticDomains]>
+  ) => {
+    commitAssessment({
+      ...data,
+      extendedAssessments: {
+        ...domains,
+        [key]: { ...domains[key], ...changes }
+      }
+    });
+  };
+
+  const updateRecommendationDecision = (decision: 'needs_training' | 'no_training') => {
+    const text = decision === 'needs_training'
+      ? 'يوصى بحاجة الطالب إلى تدريب متخصص وفق نتائج التقييم، مع متابعة التقدم وتحديث الأهداف بما يتناسب مع استجابته.'
+      : 'لا يحتاج الطالب إلى تدريب في الوقت الحالي وفق نتائج التقييم، مع الاستمرار في المتابعة وإعادة التقييم عند ظهور حاجة جديدة.';
+    commitAssessment({ ...data, recommendationDecision: decision, recommendationText: text });
   };
 
   const handlePositionChange = (
@@ -798,6 +848,87 @@ export const DiagnosisView: React.FC<DiagnosisViewProps> = ({
             </tbody>
           </table>
         </div>
+
+        <section className="mb-8 space-y-4" aria-labelledby="supporting-assessments-title">
+          <div className="flex items-center gap-2 border-b border-sky-200 pb-3">
+            <CheckCircle2 className="h-5 w-5 text-sky-700" />
+            <h3 id="supporting-assessments-title" className="text-base font-black text-sky-950">
+              التقييمات الوظيفية واللغوية المساندة
+            </h3>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            {DIAGNOSTIC_DOMAIN_SECTIONS.map(section => {
+              const domain = domains[section.key];
+              return (
+                <article key={section.key} className="rounded-2xl border border-sky-100 bg-slate-50/60 p-4">
+                  <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                    <h4 className="text-sm font-black text-sky-950">{section.title}</h4>
+                    <label className="flex items-center gap-2 text-xs font-bold text-slate-600 print:hidden">
+                      الحالة
+                      <SavedSelect
+                        aria-label={`حالة ${section.title}`}
+                        value={domain.status}
+                        onChange={event => updateDomain(section.key, { status: event.target.value as DiagnosticDomainStatus })}
+                        className="rounded-lg border border-sky-200 bg-white px-2 py-1.5 text-xs font-bold text-sky-950"
+                      >
+                        {DIAGNOSTIC_DOMAIN_STATUSES.map(status => <option key={status} value={status}>{status}</option>)}
+                      </SavedSelect>
+                    </label>
+                    <span className="hidden rounded-full bg-sky-100 px-2.5 py-1 text-xs font-bold text-sky-900 print:inline-block">{domain.status}</span>
+                  </div>
+
+                  <label className="mb-1 block text-xs font-black text-slate-700">{section.skillsLabel}</label>
+                  <SavedField
+                    multiline
+                    rows={3}
+                    aria-label={section.skillsLabel}
+                    value={domain.skills}
+                    onChange={event => updateDomain(section.key, { skills: event.target.value })}
+                    className="mb-3 w-full rounded-xl border border-slate-200 bg-white p-3 text-xs font-medium leading-relaxed text-slate-700"
+                  />
+
+                  <label className="mb-1 block text-xs font-black text-slate-700">{section.evaluationLabel}</label>
+                  <SavedField
+                    multiline
+                    rows={3}
+                    aria-label={section.evaluationLabel}
+                    value={domain.evaluation}
+                    onChange={event => updateDomain(section.key, { evaluation: event.target.value })}
+                    className="w-full rounded-xl border border-slate-200 bg-white p-3 text-xs font-medium leading-relaxed text-slate-700"
+                  />
+                </article>
+              );
+            })}
+          </div>
+        </section>
+
+        <section className="mb-8 rounded-2xl border border-emerald-200 bg-emerald-50/50 p-5" aria-labelledby="recommendation-title">
+          <div className="mb-3 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+            <h3 id="recommendation-title" className="text-sm font-black text-emerald-950">التوصية التشخيصية</h3>
+            <SavedSelect
+              aria-label="قرار التوصية التشخيصية"
+              value={recommendation.decision}
+              onChange={event => updateRecommendationDecision(event.target.value as 'needs_training' | 'no_training')}
+              className="rounded-xl border border-emerald-300 bg-white px-3 py-2 text-xs font-black text-emerald-950 print:hidden"
+            >
+              <option value="needs_training">يوصى بحاجة الطالب إلى تدريب</option>
+              <option value="no_training">لا يحتاج إلى تدريب</option>
+            </SavedSelect>
+            <span className="hidden text-xs font-black text-emerald-950 print:block">
+              {recommendation.decision === 'needs_training' ? 'يوصى بحاجة الطالب إلى تدريب' : 'لا يحتاج إلى تدريب'}
+            </span>
+          </div>
+          <SavedField
+            multiline
+            rows={3}
+            aria-label="نص التوصية القابل للتعديل"
+            value={recommendation.text}
+            onChange={event => commitAssessment({ ...data, recommendationDecision: recommendation.decision, recommendationText: event.target.value })}
+            className="w-full rounded-xl border border-emerald-200 bg-white p-3 text-xs font-semibold leading-relaxed text-slate-800"
+          />
+          <p className="mt-2 text-[11px] text-emerald-800 print:hidden">يمكن تعديل نص التوصية مباشرة، وتحفظ التغييرات مع ملف الطالب.</p>
+        </section>
 
         {/* Conclusion / Summary notes with Auto-generate Button & Direct Manual Edit */}
         {data.summaryNeedsReview && <p role="status" className="rounded-lg bg-amber-50 p-3 text-amber-900">تغيّرت نتائج النطق. راجع الخلاصة أو أعد توليدها قبل الطباعة؛ لم نستبدل نصك المحفوظ تلقائياً.</p>}
