@@ -104,6 +104,7 @@ export interface CaseStudyData {
   medicalHistory: string;
   developmentHistory: string;
   speechHistory: string;
+  speechProblemOnsetDate?: string;
   familyHistory: string;
   hearingStatus: string;
   behaviorNotes: string;
@@ -173,6 +174,7 @@ export interface LongTermPlanGoal {
   targetLetter: ArabicLetterKey;
   goalDescription: string;
   successCriterion: string;
+  successTargetPercentage?: number;
   targetPeriod: string;
   startingBaseline: string;
   finalExpectedOutcome: string;

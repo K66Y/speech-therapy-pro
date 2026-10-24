@@ -52,7 +52,7 @@ export const LongTermPlanView: React.FC<LongTermPlanViewProps> = ({
   const addGoal = () => {
     const letter = newGoalLetter;
     const first = data.goals[0];
-    const newGoal = { ...(first || {}), id: `ltg-${student.id}-${Date.now()}`, code: `هدف عام ${data.goals.length + 1}`, targetLetter: letter, goalDescription: `أن ينطق الطالب صوت حرف (${letter}) في مواضعه المختلفة وفق معيار الإتقان المحدد.`, successCriterion: first?.successCriterion || '', targetPeriod: first?.targetPeriod || 'فصل دراسي', startingBaseline: '', finalExpectedOutcome: '', evaluationMethod: first?.evaluationMethod || '', progressPercentage: 0 };
+    const newGoal = { ...(first || {}), id: `ltg-${student.id}-${Date.now()}`, code: `هدف عام ${data.goals.length + 1}`, targetLetter: letter, goalDescription: `أن ينطق الطالب صوت حرف (${letter}) في مواضعه المختلفة وفق معيار الإتقان المحدد.`, successCriterion: first?.successCriterion || '', successTargetPercentage: first?.successTargetPercentage ?? 90, targetPeriod: first?.targetPeriod || 'فصل دراسي', startingBaseline: '', finalExpectedOutcome: '', evaluationMethod: first?.evaluationMethod || '', progressPercentage: 0 };
     newGoal.id = `ltg-${crypto.randomUUID()}`;
     const updated = { ...data, goals: [...data.goals, { ...newGoal, status: 'in_progress' as const }] };
     setData(updated);
@@ -179,9 +179,9 @@ export const LongTermPlanView: React.FC<LongTermPlanViewProps> = ({
                     </div>
                     <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200">
                       <span className="text-slate-500 block font-bold text-[11px] mb-0.5">
-                        معيار النجاح النهائي:
+                        نسبة نجاح التقييم:
                       </span>
-                      <SavedField multiline aria-label="معيار النجاح" value={g.successCriterion} onChange={e => updateGoal(g.id, { successCriterion: e.target.value })} className="w-full bg-transparent text-slate-800 print:hidden" rows={3} />
+                      <SavedField suffix="%" aria-label="نسبة نجاح التقييم" type="number" min="0" max="100" value={g.successTargetPercentage ?? 90} onChange={e => updateGoal(g.id, { successTargetPercentage: Math.min(100, Math.max(0, Number(e.target.value) || 0)) })} className="w-20 bg-transparent text-center font-black text-emerald-800" />
                     </div>
                     <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200">
                       <span className="text-slate-500 block font-bold text-[11px] mb-0.5">

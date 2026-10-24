@@ -592,7 +592,7 @@ export async function exportPlansDocx(
           createStyledCell('الرمز والهدف العام', 20, true),
           createStyledCell('الصوت المستهدف', 15, true),
           createStyledCell('نص الهدف ومخرجات نهاية الفصل', 45, true),
-          createStyledCell('معيار التحقق', 15, true),
+          createStyledCell('نسبة نجاح التقييم', 15, true),
           createStyledCell('الحالة', 15, true)
         ]
       }),
@@ -603,7 +603,7 @@ export async function exportPlansDocx(
               createStyledCell(g.code, 20, false, true),
               createStyledCell(`حرف [ ${g.targetLetter} ]`, 15, false, true, PRIMARY_COLOR),
               createStyledCell(`${g.goalDescription}\nخط الأساس: ${g.startingBaseline}\nالناتج المتوقع: ${g.finalExpectedOutcome}\nمدة التنفيذ: ${g.targetPeriod}\nالتقييم: ${g.evaluationMethod}`, 45),
-              createStyledCell(g.successCriterion, 15),
+              createStyledCell(`${g.successTargetPercentage ?? 90}%`, 15),
               createStyledCell(g.status === 'achieved' ? 'منجز' : 'تحت التدريب', 15, false, true, g.status === 'achieved' ? '059669' : 'B45309')
             ]
           })

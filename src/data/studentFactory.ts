@@ -27,6 +27,7 @@ export function createNewStudentRecords(student: StudentProfile, targetLettersIn
     student,
     medicalHistory: 'تاريخ ولادي طبيعي دون مضاعفات، السمع سليم ولا توجد متلازمات وراثية أو أمراض مزمنة.',
     developmentHistory: 'تطور الحركات الكبرى طبيعي، تأخر طفيف في بداية نطق الكلمات والجمل في سن ما قبل المدرسة.',
+    speechProblemOnsetDate: currentDate,
     speechHistory: `صعوبة في نطق الأصوات المستهدفة (${targetLetters.join('، ')}) في مواضع الكلمة المختلفة مما يؤثر على الطلاقة اللغوية.`,
     familyHistory: `الأسرة متعاونة جداً وتتابع مع المدرسة لتطبيق التمارين المنزلية اليومية.`,
     hearingStatus: 'تم إجراء فحص المسح السمعي المدرسي وكانت النتيجة سليمة تماماً للأذنين.',
@@ -111,7 +112,7 @@ export function createNewStudentRecords(student: StudentProfile, targetLettersIn
     summaryConclusion: `أظهر التقييم التشخيصي وجود اضطراب نطق في الأصوات المستهدفة (${targetLetters.join('، ')}) بنسبة وضوح كلام إجمالية بلغت 88%. التوصية: خطة علاجية مخصصة باستخدام المرآة وخافض اللسان.`,
     extendedAssessments: structuredClone(DEFAULT_DIAGNOSTIC_DOMAINS),
     recommendationDecision: 'needs_training',
-    recommendationText: 'يوصى بحاجة الطالب إلى تدريب متخصص وفق نتائج التقييم، مع متابعة التقدم وتحديث الأهداف بما يتناسب مع استجابته.'
+    recommendationText: 'تدريب الصوت المستهدف بالتدرج من نطق الصوت بشكل مفرد إلى المقاطع ثم الكلمات والجمل والتواصل، وفق الأداء المسجل.'
   };
 
   // 3. الخطة طويلة المدى
@@ -128,6 +129,7 @@ export function createNewStudentRecords(student: StudentProfile, targetLettersIn
         targetLetter,
         goalDescription: `أن ينطق الطالب صوت حرف (${targetLetter}) بجميع مواضعه وحركاته بنسبة إتقان لا تقل عن 90% في المحادثة الحرة بنهاية الفصل الدراسي.`,
         successCriterion: 'دقة نطق بنسبة 90% مقاسة عبر 3 جلسات تقييمية متتالية.',
+        successTargetPercentage: 90,
         targetPeriod: 'فصل دراسي كامل (12 أسبوعاً)',
         startingBaseline: `إبدال صوت حرف (${targetLetter}) بنسبة خطأ في الكلمات العفوية.`,
         finalExpectedOutcome: `القدرة على نطق حرف (${targetLetter}) بطلاقة في الكلمات المعزولة والجمل والمحادثة اليومية.`,

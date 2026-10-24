@@ -62,7 +62,7 @@ import { waitForPendingWrites } from 'firebase/firestore';
 import { loadWorkspace, recordLogin, saveWorkspace, type WorkspaceState } from './services/workspaceService';
 
 import { triggerOfficialPrint } from './services/printService';
-import { getDiagnosedTargetLetters, getDiagnosisCategories, sameLetters } from './services/clinicalCaseLink';
+import { applyStudentTargetsToAssessment, getDiagnosedTargetLetters, getDiagnosisCategories, linkCaseStudyClinicalFields, sameLetters } from './services/clinicalCaseLink';
 
 type ActiveTab =
   | 'letters'
@@ -262,8 +262,8 @@ function WorkspaceApp({ user }: { user: User | null }) {
     : currentFinalReport;
   const currentTargetHomework = currentHwList.find(homework => clinicalTargets.has(homework.targetLetter)) || currentHwList[0];
 
-  // The diagnosis is the clinical source of truth. It updates the whole student case
-  // while preserving every existing record and every manual edit.
+  // Diagnosis and case-study targets stay bidirectionally linked, then update every
+  // dependent record while preserving manual edits that are unrelated to letters.
   useEffect(() => {
     const targets = clinicalTargetLetters;
     if (!targets.length) return;
@@ -290,9 +290,13 @@ function WorkspaceApp({ user }: { user: User | null }) {
     setCaseStudies(previous => {
       const study = previous[activeStudentId];
       if (!study) return { ...previous, [activeStudentId]: generated.caseStudy };
-      if (sameLetters(study.student.targetLetters, targets)
-        && (study.student.diagnosisCategories || []).join('|') === diagnosisCategories.join('|')) return previous;
-      return { ...previous, [activeStudentId]: { ...study, student: linkedStudent } };
+      const linkedStudy = linkCaseStudyClinicalFields({ ...study, student: linkedStudent }, targets, diagnosisCategories);
+      const sameClinicalSelection = sameLetters(study.student.targetLetters, targets)
+        && (study.student.diagnosisCategories || []).join('|') === diagnosisCategories.join('|');
+      const generatedClinicalTextIsOutdated = /اضطراب نطق وظيفي|الأصوات المستهدفة/.test(study.initialDiagnosis)
+        && !targets.every(letter => study.initialDiagnosis.includes(letter));
+      if (sameClinicalSelection && !generatedClinicalTextIsOutdated) return previous;
+      return { ...previous, [activeStudentId]: linkedStudy };
     });
 
     setLongTermPlans(previous => {
@@ -665,7 +669,27 @@ function WorkspaceApp({ user }: { user: User | null }) {
         {activeTab === 'casestudy' && (
           <CaseStudyView
             caseStudy={currentCaseStudy}
-            onUpdateCaseStudy={updated => { setCaseStudies(prev => ({ ...prev, [activeStudentId]: updated })); setStudents(prev => prev.map(student => student.id === updated.student.id ? updated.student : student)); }}
+            onUpdateCaseStudy={updated => {
+              const previousTargets = currentStudent.targetLetters || [];
+              const nextTargets = updated.student.targetLetters || [];
+              const previousCategories = (currentStudent.diagnosisCategories || [currentStudent.diagnosisCategory]).filter(Boolean);
+              const nextCategories = (updated.student.diagnosisCategories || [updated.student.diagnosisCategory]).filter(Boolean);
+              const clinicalChanged = !sameLetters(previousTargets, nextTargets) || previousCategories.join('|') !== nextCategories.join('|');
+              const linked = clinicalChanged ? linkCaseStudyClinicalFields(updated, nextTargets, nextCategories) : updated;
+              setCaseStudies(prev => ({ ...prev, [activeStudentId]: linked }));
+              setStudents(prev => prev.map(student => student.id === linked.student.id ? linked.student : student));
+              if (clinicalChanged) {
+                setAssessments(prev => ({
+                  ...prev,
+                  [activeStudentId]: applyStudentTargetsToAssessment(
+                    prev[activeStudentId] || currentAssessment,
+                    nextTargets,
+                    nextCategories,
+                    previousTargets
+                  )
+                }));
+              }
+            }}
           />
         )}
 

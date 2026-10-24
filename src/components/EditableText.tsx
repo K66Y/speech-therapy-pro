@@ -16,11 +16,12 @@ interface EditableTextProps {
   targetLetter?: string;
   validate?: (value: string) => string | undefined;
   suffix?: string;
+  disableDefaultSuggestions?: boolean;
 }
 
 /** A compact, explicit edit/save control that keeps the normal document appearance. */
 export const EditableText: React.FC<EditableTextProps> = ({
-  label, value, onSave, multiline = true, rows = 3, onDelete = () => onSave(''), className = '', suggestions, validate, targetLetter, suffix
+  label, value, onSave, multiline = true, rows = 3, onDelete = () => onSave(''), className = '', suggestions, validate, targetLetter, suffix, disableDefaultSuggestions = false
 }) => {
   const isDate = /تاريخ/.test(label);
   value = isDate ? formatHijriDate(value) : displayBodyText(value);
@@ -30,7 +31,7 @@ export const EditableText: React.FC<EditableTextProps> = ({
   const [error, setError] = useState('');
   const [customizing, setCustomizing] = useState(false);
   const [appendChoice, setAppendChoice] = useState(false);
-  const choices = [...new Set([...(suggestions || []), ...fieldChoices(label, targetLetter)].map(displayBodyText))];
+  const choices = [...new Set([...(suggestions || []), ...(disableDefaultSuggestions ? [] : fieldChoices(label, targetLetter))].map(displayBodyText))];
   const hasChoices = choices.length > 0;
 
   useEffect(() => {

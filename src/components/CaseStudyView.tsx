@@ -17,6 +17,7 @@ import { OfficialHeader } from './OfficialHeader';
 import { SCHOOL_KLICHE } from '../data/sampleData';
 import { triggerOfficialPrint } from '../services/printService';
 import { EditableText } from './EditableText';
+import { linkCaseStudyClinicalFields } from '../services/clinicalCaseLink';
 
 interface CaseStudyViewProps {
   caseStudy: CaseStudyData;
@@ -185,8 +186,8 @@ export const CaseStudyView: React.FC<CaseStudyViewProps> = ({
         </div>
 
         <div className="mb-6 grid gap-4 rounded-xl border border-slate-200 p-4 text-xs md:grid-cols-2">
-          <div><h4 className="mb-2 font-bold">الاضطرابات النطقية</h4><EditableText label="الاضطرابات النطقية" value={(std.diagnosisCategories || [std.diagnosisCategory]).filter(Boolean).join('، ')} suggestions={['إبدال','حذف','تشويه','إضافة','إبدال، تشويه','إبدال، حذف']} onSave={value => { const updated = { ...data, student: { ...std, diagnosisCategory: value, diagnosisCategories: value.split(/[،,\n]/).map(item => item.trim()).filter(Boolean) } }; setData(updated); onUpdateCaseStudy(updated); }} /></div>
-          <div><h4 className="mb-2 font-bold">الحروف المستهدفة</h4><TargetLettersEditor value={std.targetLetters || []} onSave={targetLetters => { const updated = { ...data, student: { ...std, targetLetters } }; setData(updated); onUpdateCaseStudy(updated); }} /></div>
+          <div><h4 className="mb-2 font-bold">الاضطرابات النطقية</h4><EditableText label="الاضطرابات النطقية" value={(std.diagnosisCategories || [std.diagnosisCategory]).filter(Boolean).join('، ')} suggestions={['إبدال','حذف','تشويه','إضافة','إبدال، تشويه','إبدال، حذف']} onSave={value => { const categories = value.split(/[،,\n]/).map(item => item.trim()).filter(Boolean); const updated = linkCaseStudyClinicalFields(data, std.targetLetters || [], categories); setData(updated); onUpdateCaseStudy(updated); }} /></div>
+          <div><h4 className="mb-2 font-bold">الحروف المستهدفة</h4><TargetLettersEditor value={std.targetLetters || []} onSave={targetLetters => { const updated = linkCaseStudyClinicalFields(data, targetLetters); setData(updated); onUpdateCaseStudy(updated); }} /></div>
         </div>
         {/* Section 2: Clinical Developmental History */}
         <div className="mb-8">
@@ -208,15 +209,25 @@ export const CaseStudyView: React.FC<CaseStudyViewProps> = ({
               />
               <span className="hidden print:block whitespace-pre-wrap">{data.medicalHistory}</span>
             </div>
-            <div className="space-y-1">
-              <label className="font-bold text-slate-700">تاريخ ظهور مشكلة النطق والكلام:</label>
-              <SavedField multiline
-                rows={2}
-                aria-label="تاريخ ظهور الصعوبة" value={data.speechHistory}
-                onChange={e => { const updated = { ...data, speechHistory: e.target.value }; setData(updated); onUpdateCaseStudy(updated); }}
-                className="w-full border border-slate-200 rounded-xl p-2.5 bg-slate-50/50 leading-relaxed"
-              />
-              <span className="hidden print:block whitespace-pre-wrap">{data.speechHistory}</span>
+            <div className="space-y-3">
+              <div className="space-y-1">
+                <label className="font-bold text-slate-700">تاريخ ظهور مشكلة النطق والكلام:</label>
+                <SavedField
+                  aria-label="تاريخ ظهور المشكلة" value={data.speechProblemOnsetDate || ''}
+                  disableDefaultSuggestions suggestions={[]}
+                  onChange={e => { const updated = { ...data, speechProblemOnsetDate: e.target.value }; setData(updated); onUpdateCaseStudy(updated); }}
+                  className="w-full border border-slate-200 rounded-xl p-2.5 bg-slate-50/50 leading-relaxed"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="font-bold text-slate-700">وصف ظهور المشكلة النطقية والكلامية:</label>
+                <SavedField multiline rows={2}
+                  aria-label="وصف ظهور المشكلة" value={data.speechHistory}
+                  onChange={e => { const updated = { ...data, speechHistory: e.target.value }; setData(updated); onUpdateCaseStudy(updated); }}
+                  className="w-full border border-slate-200 rounded-xl p-2.5 bg-slate-50/50 leading-relaxed"
+                />
+              </div>
+              <span className="hidden print:block whitespace-pre-wrap">{data.speechProblemOnsetDate || '—'} — {data.speechHistory}</span>
             </div>
             <div className="space-y-1">
               <label className="font-bold text-slate-700">الفحص السمعي والإدراك السمعي للأصوات:</label>
