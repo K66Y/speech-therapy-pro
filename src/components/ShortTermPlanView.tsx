@@ -56,18 +56,23 @@ export const ShortTermPlanView: React.FC<ShortTermPlanViewProps> = ({
   const [addedObjectiveId, setAddedObjectiveId] = useState('');
   useEffect(() => { if (addedObjectiveId) document.getElementById(addedObjectiveId)?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, [addedObjectiveId]);
   const [selectedLetter, setSelectedLetter] = useState<ArabicLetterKey>(plan.targetLetters?.[0] || plan.targetLetter);
-  const selectableLetters = student.targetLetters?.length ? student.targetLetters : (plan.targetLetters?.length ? plan.targetLetters : [plan.targetLetter]);
+  const selectableLetters = student.targetLetters?.length ? student.targetLetters : (plan.targetLetters?.length ? plan.targetLetters : []);
   const selectableLettersKey = selectableLetters.join('|');
 
   useEffect(() => {
     setData(plan);
   }, [plan]);
   useEffect(() => {
-    setSelectedLetter(current => selectableLetters.includes(current) ? current : (selectableLetters[0] || plan.targetLetter));
-  }, [student.id, selectableLettersKey, plan.targetLetter]);
+    if (selectableLetters.length) setSelectedLetter(current => selectableLetters.includes(current) ? current : selectableLetters[0]);
+  }, [student.id, selectableLettersKey]);
 
   const updateObjective = (objId: string, changes: Partial<ShortTermPlan['objectives'][number]>) => {
     const updated = { ...data, objectives: data.objectives.map(obj => obj.id === objId ? { ...obj, ...changes } : obj) };
+    setData(updated);
+    onUpdatePlan(updated);
+  };
+  const updateCommunicationStep = (id: string, changes: Partial<NonNullable<ShortTermPlan['communicationObjectiveSteps']>[number]>) => {
+    const updated = { ...data, communicationObjectiveSteps: (data.communicationObjectiveSteps || []).map(step => step.id === id ? { ...step, ...changes } : step) };
     setData(updated);
     onUpdatePlan(updated);
   };
@@ -163,12 +168,12 @@ export const ShortTermPlanView: React.FC<ShortTermPlanViewProps> = ({
                 <SavedField aria-label="عنوان الخطة" value={data.planTitle} onChange={e => { const updated = { ...data, planTitle: e.target.value }; setData(updated); onUpdatePlan(updated); }} className="mt-1 w-full rounded-md border border-teal-200 bg-white px-2 py-1 print:hidden" />
               </label>
               <p className="text-slate-600">
-                مرجع الهدف العام: <strong className="text-slate-800">{data.longTermGoalRef}</strong> | الحروف المستهدفة: [ <strong className="text-emerald-800 text-sm">{(data.targetLetters || [data.targetLetter]).join('، ')}</strong> ]
+                مرجع الهدف العام: <strong className="text-slate-800">{data.longTermGoalRef}</strong>{selectableLetters.length > 0 && <> | الحروف المستهدفة: [ <strong className="text-emerald-800 text-sm">{selectableLetters.join('، ')}</strong> ]</>}
               </p>
             </div>
-            <label className="bg-white px-3 py-1.5 rounded-lg border border-teal-200 text-teal-900 font-bold shrink-0 print:hidden">حرف عرض الخطة:
+            {selectableLetters.length > 0 && <label className="bg-white px-3 py-1.5 rounded-lg border border-teal-200 text-teal-900 font-bold shrink-0 print:hidden">حرف عرض الخطة:
               <select value={selectedLetter} onChange={e => setSelectedLetter(e.target.value as typeof selectedLetter)} className="mr-2 rounded border border-slate-200 p-1">{selectableLetters.map(letter => <option key={letter}>{letter}</option>)}</select>
-            </label>
+            </label>}
           </div>
 
           {!!student.communicationDiagnoses?.length && <section className="mb-6 rounded-2xl border border-teal-200 bg-teal-50/50 p-5">
@@ -185,13 +190,25 @@ export const ShortTermPlanView: React.FC<ShortTermPlanViewProps> = ({
                   }} className="mt-1 w-full rounded-xl border border-slate-200 p-3 font-normal leading-7" />
                 </label>
                 <ul className="mt-3 list-disc space-y-2 pr-5 text-xs leading-6">{guide.methods.map(method => <li key={method}>{method}</li>)}</ul>
+                <div className="mt-4 space-y-2">
+                  <h4 className="text-xs font-black text-slate-800">مراحل الهدف المرتبطة بسجل الجلسات</h4>
+                  {(data.communicationObjectiveSteps || []).filter(step => step.diagnosis === diagnosis).sort((a,b) => a.stepNumber-b.stepNumber).map(step => <div key={step.id} className="rounded-lg border border-slate-200 p-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span className="rounded bg-teal-50 px-2 py-1 text-[11px] font-bold text-teal-900">المرحلة {step.stepNumber}</span>
+                      <SavedSelect aria-label={`حالة الهدف ${step.stepNumber}: ${guide.label}`} value={step.status} onChange={event => updateCommunicationStep(step.id, { status: event.target.value as typeof step.status })} className="rounded border border-slate-200 bg-white px-2 py-1 text-xs">
+                        <option value="pending">لم يبدأ</option><option value="in_progress">تحت التدريب</option><option value="achieved">منجز</option>
+                      </SavedSelect>
+                    </div>
+                    <SavedField multiline aria-label={`نص المرحلة ${step.stepNumber}: ${guide.label}`} value={step.objectiveText} onChange={event => updateCommunicationStep(step.id, { objectiveText: event.target.value })} className="mt-2 w-full rounded-lg border border-slate-200 p-2 text-sm leading-6" />
+                  </div>)}
+                </div>
                 <p className="mt-3 rounded-lg bg-amber-50 p-3 text-xs leading-6"><strong>تنسيق التنفس والكلام:</strong> {guide.breathing}</p>
               </article>;
             })}
           </section>}
 
                     {/* Stepped Objectives Table */}
-          <div className="mb-6">
+          {selectableLetters.length > 0 && <div className="mb-6">
             <h3 className="text-base font-black text-slate-900 mb-3 flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-teal-600 inline-block"></span>
               الأهداف الإجرائية المجزأة والوسائل الإكلينيكية الميدانية
@@ -305,7 +322,7 @@ export const ShortTermPlanView: React.FC<ShortTermPlanViewProps> = ({
                 );
               })}
             </div>
-          </div>
+          </div>}
 
           {/* Methodology & Home Requirements */}
           <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 text-xs mb-6">
