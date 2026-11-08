@@ -59,6 +59,8 @@ export interface StudentWeeklyTherapySession {
 }
 
 export interface StudentWeeklyTherapyPlan {
+  /** Version of the deterministic weekly template; older saved plans omit this field. */
+  templateVersion?: number;
   diagnosisKey: string;
   weekOf: string;
   longTermGoal: string;
