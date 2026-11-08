@@ -181,6 +181,12 @@ export const WeeklyTherapyPlanView: React.FC<{
 
   const update = (changes: Partial<StudentWeeklyTherapyPlan>) =>
     onUpdateStudent({ ...student, weeklyTherapyPlan: { ...plan, ...changes } });
+  const changeWeek = (weekOf: string) => {
+    if (!weekOf || weekOf === plan.weekOf) return;
+    const history = { ...student.weeklyPlanHistory, [plan.weekOf]: plan };
+    const selected = history[weekOf] || { ...defaultPlan(student), weekOf };
+    onUpdateStudent({ ...student, weeklyPlanHistory: history, weeklyTherapyPlan: selected });
+  };
   const updateSession = (id: string, changes: Partial<StudentWeeklyTherapySession>) =>
     update({ sessions: plan.sessions.map(session => session.id === id ? { ...session, ...changes } : session) });
   const toggleDiagnosis = (diagnosis: CommunicationDiagnosis) => {
@@ -226,7 +232,7 @@ export const WeeklyTherapyPlanView: React.FC<{
         <span className="font-bold text-slate-700">بداية الأسبوع:</span>
         {editingWeek ? <>
           <input type="date" value={weekDraft} onChange={event => setWeekDraft(event.target.value)} className="rounded-lg border border-slate-300 px-2 py-1.5" />
-          <button type="button" onClick={() => { update({ weekOf: weekDraft }); setEditingWeek(false); }} className="rounded-lg bg-emerald-700 px-3 py-1.5 text-xs font-bold text-white">حفظ</button>
+          <button type="button" onClick={() => { changeWeek(weekDraft); setEditingWeek(false); }} className="rounded-lg bg-emerald-700 px-3 py-1.5 text-xs font-bold text-white">حفظ</button>
           <button type="button" onClick={() => { setWeekDraft(plan.weekOf); setEditingWeek(false); }} className="rounded-lg px-2 py-1.5 text-xs text-slate-600">إلغاء</button>
         </> : <>
           <span className="text-slate-700">{plan.weekOf}</span>
@@ -283,6 +289,8 @@ export const WeeklyTherapyPlanView: React.FC<{
       </div>
       <p className="mt-3 text-sm font-bold text-sky-900">الطالب: {student.fullName}</p>
     </header>
+    <label className="block text-sm font-bold print:hidden">أسبوع الخطة <input type="date" value={plan.weekOf} onChange={event => changeWeek(event.target.value)} /></label>
+    <p className="text-sm">بداية الأسبوع {plan.weekOf}</p>
     {mode === 'plan' && <OfficialHeader documentTitle="الخطة الأسبوعية للطالب" subTitle="خطة متابعة أسبوعية مرتبطة بمسارات التشخيص والأهداف العلاجية المحددة" studentName={student.fullName} nationalId={student.nationalId} grade={`${student.grade} - ${student.classRoom}`} />}
     <div className="grid gap-4 lg:grid-cols-2">
       <label className="rounded-2xl border border-slate-200 bg-white p-4 text-sm font-bold">الهدف طويل المدى
