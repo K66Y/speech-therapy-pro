@@ -70,7 +70,7 @@ export const HomeworkView: React.FC<HomeworkViewProps> = ({
     if (matching) setActiveHw(matching);
   }, [student.id, student.targetLetters, homeworkList, activeHw.id]);
   useEffect(() => {
-    if (!shouldUpgradeParentTrainingGuide(activeHw.mirrorInstructionAtHome)) return;
+    if (activePracticeType !== 'letters' || !shouldUpgradeParentTrainingGuide(activeHw.mirrorInstructionAtHome)) return;
     const mirrorInstructionAtHome = parentTrainingGuide(activeHw.targetLetter);
     const updated = { ...activeHw, mirrorInstructionAtHome };
     setActiveHw(updated);
@@ -81,8 +81,16 @@ export const HomeworkView: React.FC<HomeworkViewProps> = ({
     setActiveHw(updated);
     onUpdateHomework(updated);
   };
+  const selectPractice = (track: NonNullable<HomeworkSheet['practiceType']>) => {
+    const letter = student.targetLetters?.[0] || activeHw.targetLetter;
+    const existing = homeworkList.find(sheet => track === 'letters' ? (!sheet.practiceType || sheet.practiceType === 'letters') && student.targetLetters?.includes(sheet.targetLetter) : sheet.practiceType === track);
+    if (existing) { setActiveHw(existing); return; }
+    const guide = track !== 'letters' ? COMMUNICATION_THERAPY_GUIDES[track] : undefined;
+    const info = ARABIC_LETTERS_MAP[letter];
+    updateHomework({ id: 'hw-' + student.id + '-' + (track === 'letters' ? letter : track), practiceType: track, targetLetter: letter, parentNotes: '', specialistFeedback: '', dateGiven: getLiveHijriDate(), returnDate: getLiveHijriDate(), letterInstructionsForParent: guide ? '' : parentGuidanceSuggestions(letter)[0], mirrorInstructionAtHome: guide ? '' : parentTrainingGuide(letter), wordsToPractice: guide ? [] : homeworkPositions.flatMap((position,index) => info.examples[(['beginning','middle','end'] as const)[index]].words.map(item => ({ position, word: item.word, repetitionCount: 5 }))), sentenceToRepeat: guide ? '' : info.practiceSentences[0], communicationHomePractice: guide ? { [track]: guide.homePractice } : {} });
+  };
   const changeTargetLetter = (targetLetter: HomeworkSheet['targetLetter']) => {
-    const existing = homeworkList.find(item => item.targetLetter === targetLetter);
+    const existing = homeworkList.find(item => (!item.practiceType || item.practiceType === 'letters') && item.targetLetter === targetLetter);
     if (existing) { setActiveHw(existing); return; }
     const info = ARABIC_LETTERS_MAP[targetLetter];
     updateHomework({ id: `hw-${student.id}-${targetLetter}-${Date.now()}`, targetLetter, parentNotes: '', specialistFeedback: '', letterInstructionsForParent: parentGuidanceSuggestions(targetLetter)[0], mirrorInstructionAtHome: parentTrainingGuide(targetLetter), wordsToPractice: [
@@ -123,7 +131,7 @@ export const HomeworkView: React.FC<HomeworkViewProps> = ({
 
         <div className="flex items-center gap-2 flex-wrap">
           <label className="text-xs font-bold text-slate-700">مسار الواجب:
-            <select value={activePracticeType} onChange={event => updateHomework({ practiceType: event.target.value as HomeworkSheet['practiceType'] })} className="mr-1 rounded-lg border border-slate-200 bg-white p-2">{availablePracticeTypes.map(track => <option key={track} value={track}>{track === 'letters' ? 'الحروف' : COMMUNICATION_THERAPY_GUIDES[track].label}</option>)}</select>
+            <select value={activePracticeType} onChange={event => selectPractice(event.target.value as NonNullable<HomeworkSheet['practiceType']>)} className="mr-1 rounded-lg border border-slate-200 bg-white p-2">{availablePracticeTypes.map(track => <option key={track} value={track}>{track === 'letters' ? 'الحروف' : COMMUNICATION_THERAPY_GUIDES[track].label}</option>)}</select>
           </label>
           {activePracticeType === 'letters' && <label className="text-xs font-bold text-slate-700">الحرف:
             <select value={activeHw.targetLetter} onChange={e => changeTargetLetter(e.target.value as HomeworkSheet['targetLetter'])} className="mr-1 rounded-lg border border-slate-200 bg-white p-2">{(student.targetLetters?.length ? student.targetLetters : ARABIC_LETTERS_LIST).map(letter => <option key={letter}>{letter}</option>)}</select>
