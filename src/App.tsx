@@ -231,15 +231,17 @@ function WorkspaceApp({ user }: { user: User | null }) {
 
   const currentStudent = students.find(s => s.id === activeStudentId) || students[0];
   const fallbackRecords = useMemo(
-    () => createNewStudentRecords(currentStudent, currentStudent?.targetLetters?.length ? currentStudent.targetLetters : ['ر']),
+    () => createNewStudentRecords(currentStudent, currentStudent?.targetLetters || []),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [currentStudent?.id, currentStudent?.targetLetters?.join('|')]
+    [currentStudent?.id, currentStudent?.targetLetters?.join('|'), currentStudent?.communicationDiagnoses?.join('|')]
   );
   // Never borrow another student's record as a fallback; every screen stays scoped to the active case.
   const currentCaseStudy = caseStudies[activeStudentId] || fallbackRecords.caseStudy;
   const currentAssessment = assessments[activeStudentId] || fallbackRecords.assessment;
   const currentLTPlan = longTermPlans[activeStudentId] || fallbackRecords.longTermPlan;
-  const currentSTPlan = shortTermPlans[activeStudentId] || fallbackRecords.shortTermPlan;
+  const savedSTPlan = shortTermPlans[activeStudentId] || fallbackRecords.shortTermPlan;
+  const savedSteps = savedSTPlan.communicationObjectiveSteps || [];
+  const currentSTPlan = { ...savedSTPlan, communicationObjectiveSteps: [...savedSteps, ...(fallbackRecords.shortTermPlan.communicationObjectiveSteps || []).filter(step => !savedSteps.some(saved => saved.diagnosis === step.diagnosis))] };
   const currentSessions = dailySessions[activeStudentId] || fallbackRecords.sessions;
   const currentHwList = homeworkList[activeStudentId] || fallbackRecords.homework;
   const currentFinalReport = finalReports[activeStudentId] || fallbackRecords.finalReport;
