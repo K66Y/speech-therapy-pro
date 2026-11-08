@@ -52,6 +52,8 @@ export interface StudentWeeklyTherapySession {
   day: 'الأحد' | 'الاثنين' | 'الثلاثاء' | 'الأربعاء' | 'الخميس';
   sessionNumber: 1 | 2 | 3;
   focus: string;
+  trainingType?: 'letters' | CommunicationDiagnosis;
+  linkedGoalId?: string;
   activities: string;
   breathingPractice: string;
   homePractice: string;
@@ -238,6 +240,16 @@ export interface ShortTermObjective {
   notes: string;
 }
 
+export interface CommunicationPlanObjective {
+  id: string;
+  diagnosis: CommunicationDiagnosis;
+  stepNumber: number;
+  objectiveText: string;
+  status: 'pending' | 'in_progress' | 'achieved';
+  currentPercentage: number;
+  successTargetPercentage: number;
+}
+
 export interface ShortTermPlan {
   id: string;
   studentId: string;
@@ -248,6 +260,7 @@ export interface ShortTermPlan {
   specialistName: string; // ظافر ناصر الشهراني
   objectives: ShortTermObjective[];
   communicationObjectives?: Partial<Record<CommunicationDiagnosis, string>>;
+  communicationObjectiveSteps?: CommunicationPlanObjective[];
   clinicalMethodology: string;
   homeSupportRequirements: string;
 }
@@ -260,6 +273,10 @@ export interface DailySessionLog {
   sessionDuration: string; // 30 دقيقة
   targetLetter: ArabicLetterKey;
   targetObjective: string;
+  trainingType?: 'letters' | CommunicationDiagnosis;
+  linkedGoalId?: string;
+  linkedGoalType?: 'letter' | 'communication';
+  goalCompleted?: boolean;
   toolsUsed: {
     mirror: boolean;
     tongueDepressor: boolean;
@@ -281,6 +298,7 @@ export interface HomeworkSheet {
   id: string;
   studentId: string;
   targetLetter: ArabicLetterKey;
+  practiceType?: 'letters' | CommunicationDiagnosis;
   dateGiven: string;
   returnDate: string;
   letterInstructionsForParent: string;
