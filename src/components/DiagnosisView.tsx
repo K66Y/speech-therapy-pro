@@ -40,11 +40,12 @@ const DIAGNOSTIC_DOMAIN_SECTIONS: Array<{
   skillsLabel: string;
   evaluationLabel: string;
 }> = [
-  { key: 'fluency', title: 'تقييم اضطرابات الطلاقة', skillsLabel: 'مؤشرات ومهارات الطلاقة', evaluationLabel: 'نتيجة تقييم الطلاقة' },
+  { key: 'fluency', title: 'تقييم اضطرابات الطلاقة والتأتأة', skillsLabel: 'مؤشرات ومهارات الطلاقة والتأتأة', evaluationLabel: 'نتيجة تقييم الطلاقة والتأتأة' },
   { key: 'receptiveLanguage', title: 'اللغة الاستقبالية', skillsLabel: 'مهارات اللغة الاستقبالية', evaluationLabel: 'تقييم اللغة الاستقبالية' },
   { key: 'expressiveLanguage', title: 'اللغة التعبيرية', skillsLabel: 'مهارات اللغة التعبيرية', evaluationLabel: 'تقييم اللغة التعبيرية' },
   { key: 'vocabulary', title: 'تقييم الحصيلة اللغوية', skillsLabel: 'مهارات الحصيلة اللغوية', evaluationLabel: 'نتيجة تقييم الحصيلة اللغوية' },
-  { key: 'eyeContact', title: 'تقييم التواصل البصري', skillsLabel: 'مهارات التواصل البصري', evaluationLabel: 'نتيجة تقييم التواصل البصري' }
+  { key: 'eyeContact', title: 'تقييم التواصل البصري', skillsLabel: 'مهارات التواصل البصري', evaluationLabel: 'نتيجة تقييم التواصل البصري' },
+  { key: 'aphasia', title: 'تقييم اللغة في حالات الحبسة الكلامية', skillsLabel: 'الفهم والتعبير والتواصل الوظيفي', evaluationLabel: 'نتيجة التقييم اللغوي' }
 ];
 
 const DIAGNOSTIC_DOMAIN_STATUSES: DiagnosticDomainStatus[] = ['لم يُقيّم', 'ضمن المتوقع', 'يحتاج متابعة', 'بحاجة إلى تدريب'];
