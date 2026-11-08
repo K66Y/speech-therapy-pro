@@ -139,7 +139,7 @@ export const DailySessionView: React.FC<DailySessionViewProps> = ({
               <p className="mt-3 rounded-lg bg-amber-50 p-3 text-xs leading-6"><strong>تنسيق التنفس:</strong> {guide.breathing}</p>
             </article>)}
             <p className="text-xs leading-6 text-slate-600">ستُسجل الأنشطة المختارة في تقرير الجلسة. أزل أي طريقة لا تناسب نتيجة تقييم الطالب أو تفضيلاته.</p>
-          </div>
+          </div>}
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
             <div>
