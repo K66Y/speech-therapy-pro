@@ -1,10 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { CalendarDays, CheckCircle2, ChevronDown, Clock3, Pencil, X } from 'lucide-react';
-import type { CommunicationDiagnosis, StudentProfile, StudentWeeklyTherapyPlan, StudentWeeklyTherapySession } from '../types/speechTherapy';
+import { CalendarDays, CheckCircle2, ChevronDown, Clock3, Pencil, X, Printer } from 'lucide-react';
+import type { CommunicationDiagnosis, ShortTermPlan, LongTermPlan, StudentProfile, StudentWeeklyTherapyPlan, StudentWeeklyTherapySession } from '../types/speechTherapy';
 import { COMMUNICATION_THERAPY_GUIDES } from '../data/communicationTherapyGuides';
 import { SavedField } from './SavedField';
 import { SavedSelect } from './SavedSelect';
 import { ChoicePicker } from './ChoicePicker';
+import { OfficialHeader } from './OfficialHeader';
+import { triggerOfficialPrint } from '../services/printService';
 
 const DAYS = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس'] as const;
 type Mode = 'schedule' | 'plan';
@@ -26,32 +28,57 @@ const GENERAL_HOME = [
   'استخدام كلمة الهدف في جملة أو موقف يومي مناسب، والتوقف عند التعب دون ضغط أو تكرار مرهق.',
   'تدوين ملاحظة قصيرة عن استجابة الطالب والموضع الذي احتاج فيه إلى مساعدة لمناقشتها مع المعلم.'
 ];
-const WEEKLY_PLAN_VERSION = 2;
+const WEEKLY_PLAN_VERSION = 3;
+
+function weeklyDiagnosisKey(student: StudentProfile): string {
+  const letters = student.targetLetters?.length ? `letters:${student.targetLetters.join(',')}` : '';
+  const communication = (student.communicationDiagnoses || []).slice().sort().map(item => `communication:${item}`).join('|');
+  return [letters, communication].filter(Boolean).join('|') || 'speech';
+}
+
+function studentForWeeklyKey(student: StudentProfile, key: string): StudentProfile {
+  if (!key || key === 'speech') return { ...student, targetLetters: [], communicationDiagnoses: [] };
+  const parts = key.split('|');
+  if (parts.some(part => part.startsWith('communication:') || part.startsWith('letters:'))) {
+    const lettersPart = parts.find(part => part.startsWith('letters:'))?.slice('letters:'.length);
+    const communicationDiagnoses = parts.filter(part => part.startsWith('communication:')).map(part => part.slice('communication:'.length)) as CommunicationDiagnosis[];
+    return { ...student, targetLetters: lettersPart ? lettersPart.split(',') as StudentProfile['targetLetters'] : [], communicationDiagnoses };
+  }
+  return { ...student, targetLetters: [], communicationDiagnoses: parts as CommunicationDiagnosis[] };
+}
 
 function defaultPlan(student: StudentProfile): StudentWeeklyTherapyPlan {
   const diagnoses = student.communicationDiagnoses || [];
-  const guides = diagnoses.map(diagnosis => COMMUNICATION_THERAPY_GUIDES[diagnosis]);
   const targetLetters = student.targetLetters || [];
-  const targetLabel = targetLetters.length ? targetLetters.join('، ') : '';
+  const targetLabel = targetLetters.join('، ');
+  const tracks: Array<'letters' | CommunicationDiagnosis> = [
+    ...(targetLetters.length ? ['letters' as const] : []),
+    ...diagnoses
+  ];
+  const assignedTrack = (index: number): 'letters' | CommunicationDiagnosis => tracks.length ? tracks[index % tracks.length] : 'letters';
   const sessions: StudentWeeklyTherapySession[] = DAYS.flatMap((day, dayIndex) =>
     ([1, 2, 3] as const).map((sessionNumber, slotIndex) => {
+      const index = dayIndex * 3 + slotIndex;
+      const track = assignedTrack(index);
+      const guide = track === 'letters' ? undefined : COMMUNICATION_THERAPY_GUIDES[track];
       const methodIndex = METHOD_ORDER[dayIndex][slotIndex];
-      const activities = guides.length
-        ? guides.map(guide => `${guide.label}: ${guide.methods[methodIndex % guide.methods.length]}`).join('\n\n')
+      const activities = guide
+        ? guide.methods[methodIndex % guide.methods.length]
         : GENERAL_METHODS[methodIndex % GENERAL_METHODS.length];
-      const breathingPractice = guides.length
-        ? guides.map(guide => `${guide.label}: ${guide.breathing}`).join('\n\n')
-        : 'لا يضاف تدريب تنفس تلقائيًا؛ يُدرج فقط إذا حدّد التقييم حاجة وظيفية واضحة للتنسيق بين النفس والكلام.';
-      const homePractice = guides.length
-        ? guides.map(guide => `${guide.label}: ${guide.homePractice}`).join('\n\n')
+      const breathingPractice = guide
+        ? guide.breathing
+        : 'لا يضاف تدريب تنفس تلقائيًا للحروف؛ يُدرج فقط إذا أظهر التقييم حاجة وظيفية واضحة.';
+      const homePractice = guide
+        ? guide.homePractice
         : GENERAL_HOME[methodIndex % GENERAL_HOME.length];
       return {
         id: `${student.id}-${day}-${sessionNumber}`,
         day,
         sessionNumber,
-        focus: targetLabel && guides.length === 0
-          ? `${WEEKLY_FOCUS[dayIndex][slotIndex]} · الحروف المستهدفة: ${targetLabel}`
-          : WEEKLY_FOCUS[dayIndex][slotIndex],
+        trainingType: track,
+        focus: guide
+          ? `${guide.label} · ${WEEKLY_FOCUS[dayIndex][slotIndex]}`
+          : `${WEEKLY_FOCUS[dayIndex][slotIndex]}${targetLabel ? ` · الحروف المستهدفة: ${targetLabel}` : ''}`,
         activities,
         breathingPractice,
         homePractice,
@@ -59,62 +86,33 @@ function defaultPlan(student: StudentProfile): StudentWeeklyTherapyPlan {
       };
     })
   );
+  const longTermGoals = [
+    ...(targetLetters.length ? [`تحقيق أهداف الحروف المستهدفة (${targetLabel}) وفق الخطة العلاجية والقياس الموثق.`] : []),
+    ...diagnoses.map(diagnosis => COMMUNICATION_THERAPY_GUIDES[diagnosis].longTermGoal)
+  ];
+  const shortTermGoals = [
+    ...(targetLetters.length ? [`تنفيذ الهدف النطقي الحالي للحروف (${targetLabel}) وتسجيل الدقة ودرجة المساعدة.`] : []),
+    ...diagnoses.map(diagnosis => COMMUNICATION_THERAPY_GUIDES[diagnosis].shortTermGoal)
+  ];
   return {
     templateVersion: WEEKLY_PLAN_VERSION,
-    diagnosisKey: diagnoses.slice().sort().join('|') || 'speech',
+    diagnosisKey: weeklyDiagnosisKey(student),
     weekOf: new Date().toISOString().slice(0, 10),
-    longTermGoal: guides.length
-      ? guides.map(guide => guide.longTermGoal).join('\n\n')
-      : `تحقيق أهداف الطالب الفردية المسجلة في التشخيص والخطة العلاجية${targetLabel ? ` للحروف المستهدفة (${targetLabel})` : ''}، ومراجعة التقدم بالبيانات.`,
-    shortTermGoals: guides.length
-      ? guides.map(guide => guide.shortTermGoal)
-      : [`تنفيذ الهدف التدريبي الحالي${targetLabel ? ` للحروف (${targetLabel})` : ''} وتسجيل المحاولات الصحيحة ودرجة المساعدة.`],
+    longTermGoal: longTermGoals.join('\\n\\n') || 'لم تُسجل أهداف بعد؛ استكمل التشخيص والخطة قصيرة المدى قبل إعداد الخطة الأسبوعية.',
+    shortTermGoals: shortTermGoals.length ? shortTermGoals : ['لم تُسجل أهداف قصيرة المدى بعد.'],
     sessions
   };
 }
 
-/** Retains the old generated content only to recognize and safely replace unedited templates. */
+/** Deterministic previous template used only to preserve manually edited plan fields during migration. */
 function legacyDefaultPlan(student: StudentProfile): StudentWeeklyTherapyPlan {
-  const diagnoses = student.communicationDiagnoses || [];
-  const sessions: StudentWeeklyTherapySession[] = DAYS.flatMap(day =>
-    ([1, 2, 3] as const).map((sessionNumber, index) => {
-      const diagnosis = diagnoses.length ? diagnoses[index % diagnoses.length] : undefined;
-      const guide = diagnosis ? COMMUNICATION_THERAPY_GUIDES[diagnosis] : undefined;
-      return {
-        id: `${student.id}-${day}-${sessionNumber}`,
-        day,
-        sessionNumber,
-        focus: guide ? `${guide.label}: هدف وظيفي يحدده التقييم` : 'تدريب الهدف النطقي المسجل',
-        activities: guide?.methods[(index + DAYS.indexOf(day)) % guide.methods.length]
-          || 'تدريب الهدف المحدد في خطة الطالب من مستوى مناسب إلى موقف وظيفي، مع توثيق الاستجابة ودرجة المساعدة.',
-        breathingPractice: guide?.breathing || 'لا يضاف تدريب تنفس تلقائيًا؛ يُدرج فقط إذا حدّد التقييم حاجة وظيفية للتنسيق بين النفس والكلام.',
-        homePractice: guide?.homePractice || 'مراجعة النشاط الذي نجح فيه الطالب في الجلسة، مع التوقف عند التعب وتسجيل ما يحتاج متابعة.',
-        status: 'مجدولة'
-      };
-    })
-  );
-  return {
-    diagnosisKey: diagnoses.slice().sort().join('|') || 'speech',
-    weekOf: new Date().toISOString().slice(0, 10),
-    longTermGoal: diagnoses.length
-      ? diagnoses.map(diagnosis => COMMUNICATION_THERAPY_GUIDES[diagnosis].longTermGoal).join('\n\n')
-      : 'تحقيق أهداف الطالب الفردية المسجلة في التشخيص والخطة العلاجية، ومراجعة التقدم بالبيانات.',
-    shortTermGoals: diagnoses.length
-      ? diagnoses.map(diagnosis => COMMUNICATION_THERAPY_GUIDES[diagnosis].shortTermGoal)
-      : ['تنفيذ الهدف التدريبي الحالي وتسجيل الاستجابة ودرجة المساعدة.'],
-    sessions
-  };
+  return defaultPlan(student);
 }
 
 function reconcilePlan(student: StudentProfile, existing: StudentWeeklyTherapyPlan): StudentWeeklyTherapyPlan {
-  const diagnosisKey = student.communicationDiagnoses?.slice().sort().join('|') || 'speech';
-  const previousDiagnoses = existing.diagnosisKey && existing.diagnosisKey !== 'speech'
-    ? existing.diagnosisKey.split('|') as CommunicationDiagnosis[]
-    : [];
-  const previousStudent = { ...student, communicationDiagnoses: previousDiagnoses };
-  const previousTemplate = existing.templateVersion === WEEKLY_PLAN_VERSION
-    ? defaultPlan(previousStudent)
-    : legacyDefaultPlan(previousStudent);
+  const diagnosisKey = weeklyDiagnosisKey(student);
+  const previousStudent = studentForWeeklyKey(student, existing.diagnosisKey);
+  const previousTemplate = legacyDefaultPlan(previousStudent);
   const nextTemplate = defaultPlan(student);
   const sessions = DAYS.flatMap(day => ([1, 2, 3] as const).map(sessionNumber => {
     const current = (Array.isArray(existing.sessions) ? existing.sessions : []).find(item => item.day === day && item.sessionNumber === sessionNumber);
@@ -127,6 +125,7 @@ function reconcilePlan(student: StudentProfile, existing: StudentWeeklyTherapyPl
       id: current.id,
       status: current.status,
       focus: current.focus === oldDefault.focus ? next.focus : current.focus,
+      trainingType: current.trainingType ?? next.trainingType,
       activities: current.activities === oldDefault.activities ? next.activities : current.activities,
       breathingPractice: current.breathingPractice === oldDefault.breathingPractice ? next.breathingPractice : current.breathingPractice,
       homePractice: current.homePractice === oldDefault.homePractice ? next.homePractice : current.homePractice
@@ -154,9 +153,11 @@ export const WeeklyTherapyPlanView: React.FC<{
   student: StudentProfile;
   onUpdateStudent: (student: StudentProfile) => void;
   mode: Mode;
-}> = ({ student, onUpdateStudent, mode }) => {
+  shortPlan: ShortTermPlan;
+  longPlan: LongTermPlan;
+}> = ({ student, onUpdateStudent, mode, shortPlan, longPlan }) => {
   const diagnoses = student.communicationDiagnoses || [];
-  const diagnosisKey = diagnoses.slice().sort().join('|') || 'speech';
+  const diagnosisKey = weeklyDiagnosisKey(student);
   const plan = useMemo(() => student.weeklyTherapyPlan || defaultPlan(student), [student.id, student.weeklyTherapyPlan, diagnosisKey]);
   const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
   const [editingWeek, setEditingWeek] = useState(false);
@@ -186,19 +187,23 @@ export const WeeklyTherapyPlanView: React.FC<{
     const next = diagnoses.includes(diagnosis) ? diagnoses.filter(item => item !== diagnosis) : [...diagnoses, diagnosis];
     onUpdateStudent({ ...student, communicationDiagnoses: next });
   };
-  const optionMethods = diagnoses.flatMap(diagnosis =>
-    COMMUNICATION_THERAPY_GUIDES[diagnosis].methods.map(method => `${COMMUNICATION_THERAPY_GUIDES[diagnosis].label}: ${method}`)
-  );
-  const breathingOptions = diagnoses.length
-    ? diagnoses.map(diagnosis => `${COMMUNICATION_THERAPY_GUIDES[diagnosis].label}: ${COMMUNICATION_THERAPY_GUIDES[diagnosis].breathing}`)
-    : ['لا يضاف تدريب تنفس تلقائيًا؛ يُدرج فقط إذا حدّد التقييم حاجة وظيفية واضحة للتنسيق بين النفس والكلام.'];
-  const homeOptions = diagnoses.length
-    ? diagnoses.map(diagnosis => `${COMMUNICATION_THERAPY_GUIDES[diagnosis].label}: ${COMMUNICATION_THERAPY_GUIDES[diagnosis].homePractice}`)
+  const optionMethods = (type: StudentWeeklyTherapySession['trainingType']) => type && type !== 'letters' ? COMMUNICATION_THERAPY_GUIDES[type].methods : GENERAL_METHODS;
+  const breathingOptions = (type: StudentWeeklyTherapySession['trainingType']) => type && type !== 'letters'
+    ? [COMMUNICATION_THERAPY_GUIDES[type].breathing]
+    : ['لا يضاف تدريب تنفس تلقائيًا للحروف؛ يُدرج فقط إذا حدّد التقييم حاجة وظيفية واضحة.'];
+  const homeOptions = (type: StudentWeeklyTherapySession['trainingType']) => type && type !== 'letters'
+    ? [COMMUNICATION_THERAPY_GUIDES[type].homePractice]
     : GENERAL_HOME;
   const focusOptions = WEEKLY_FOCUS.flatMap(dayFocus => [...dayFocus]);
   const completedCount = plan.sessions.filter(session => session.status === 'منفذة').length;
   const targetLettersText = (student.targetLetters || []).join('، ');
 
+  const weeklyGoals = [
+    ...shortPlan.objectives.filter(goal => student.targetLetters?.includes(goal.targetLetter) && goal.status !== 'achieved'),
+    ...(shortPlan.communicationObjectiveSteps || []).filter(goal => diagnoses.includes(goal.diagnosis) && goal.status !== 'achieved')
+  ];
+  const weeklyTargets = weeklyGoals.map(goal => goal.objectiveText);
+  const linkedLong = [...longPlan.goals.filter(goal => student.targetLetters?.includes(goal.targetLetter) && goal.status !== 'achieved').map(goal => goal.goalDescription), ...diagnoses.map(d => longPlan.communicationGoals?.[d] || COMMUNICATION_THERAPY_GUIDES[d].longTermGoal)].join('\n\n');
   if (mode === 'schedule') return <section dir="rtl" className="space-y-5">
     <header className="rounded-2xl border border-sky-100 bg-white p-4 md:p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -253,9 +258,9 @@ export const WeeklyTherapyPlanView: React.FC<{
             {editingSessionId === session.id && <div className="mt-3 grid gap-3 rounded-xl border border-sky-100 bg-sky-50/50 p-3 md:grid-cols-2 print:hidden">
               <div className="md:col-span-2"><p className="mb-2 text-xs leading-5 text-slate-600">اختر العنصر المناسب من القائمة. زر القلم بجانب القائمة يتيح إضافة الاقتراحات أو تعديلها وحذف غير المناسب.</p></div>
               <ChoicePicker key={makeChoiceCategory(diagnosisKey, 'focus')} category={makeChoiceCategory(diagnosisKey, 'focus')} label="محور الجلسة" suggestions={focusOptions} onSelect={value => updateSession(session.id, { focus: value })} />
-              <ChoicePicker key={makeChoiceCategory(diagnosisKey, 'methods')} category={makeChoiceCategory(diagnosisKey, 'methods')} label="طريقة التدريب" suggestions={optionMethods.length ? optionMethods : GENERAL_METHODS} onSelect={value => updateSession(session.id, { activities: value })} />
-              <ChoicePicker key={makeChoiceCategory(diagnosisKey, 'breathing')} category={makeChoiceCategory(diagnosisKey, 'breathing')} label="تنسيق التنفس (وفق التقييم)" suggestions={breathingOptions} onSelect={value => updateSession(session.id, { breathingPractice: value })} />
-              <ChoicePicker key={makeChoiceCategory(diagnosisKey, 'home')} category={makeChoiceCategory(diagnosisKey, 'home')} label="تدريب المنزل" suggestions={homeOptions} onSelect={value => updateSession(session.id, { homePractice: value })} />
+              <ChoicePicker key={makeChoiceCategory(diagnosisKey, 'methods')} category={makeChoiceCategory(diagnosisKey, 'methods')} label="طريقة التدريب" suggestions={optionMethods(session.trainingType)} onSelect={value => updateSession(session.id, { activities: value })} />
+              <ChoicePicker key={makeChoiceCategory(diagnosisKey, 'breathing')} category={makeChoiceCategory(diagnosisKey, 'breathing')} label="تنسيق التنفس (وفق التقييم)" suggestions={breathingOptions(session.trainingType)} onSelect={value => updateSession(session.id, { breathingPractice: value })} />
+              <ChoicePicker key={makeChoiceCategory(diagnosisKey, 'home')} category={makeChoiceCategory(diagnosisKey, 'home')} label="تدريب المنزل" suggestions={homeOptions(session.trainingType)} onSelect={value => updateSession(session.id, { homePractice: value })} />
             </div>}
           </article>)}
         </div>
@@ -266,9 +271,9 @@ export const WeeklyTherapyPlanView: React.FC<{
     </aside>}
   </section>;
 
-  return <section dir="rtl" className="space-y-5">
-    <header className="rounded-2xl border border-sky-100 bg-white p-4 md:p-5">
-      <h2 className="text-xl font-black text-sky-950">الخطة الأسبوعية لكل طالب</h2>
+  return <section dir="rtl" className="weekly-plan-print printable-sheet space-y-5 print:p-0 print:border-none">
+    <header className="rounded-2xl border border-sky-100 bg-white p-4 md:p-5 print:hidden">
+      <div className="flex flex-wrap items-center justify-between gap-3"><h2 className="text-xl font-black text-sky-950">الخطة الأسبوعية لكل طالب</h2><button type="button" onClick={() => triggerOfficialPrint('.weekly-plan-print')} className="inline-flex items-center gap-2 rounded-xl bg-sky-800 px-4 py-2 text-sm font-bold text-white"><Printer className="h-4 w-4"/>طباعة الخطة الأسبوعية</button></div>
       <p className="mt-2 text-sm leading-7 text-slate-600">خطة مستقلة لكل طالب، ترتبط بتشخيصه والحروف المستهدفة المسجلة. يظهر القلم عند الحقول القابلة للتحرير، ويمكن اختيار نص بديل من الاقتراحات.</p>
       <div className="mt-3 flex flex-wrap gap-3 text-sm print:hidden">
         {(['stuttering', 'aphasia'] as CommunicationDiagnosis[]).map(diagnosis => <label key={diagnosis} className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 font-bold">
@@ -278,14 +283,15 @@ export const WeeklyTherapyPlanView: React.FC<{
       </div>
       <p className="mt-3 text-sm font-bold text-sky-900">الطالب: {student.fullName}</p>
     </header>
+    {mode === 'plan' && <OfficialHeader documentTitle="الخطة الأسبوعية للطالب" subTitle="خطة متابعة أسبوعية مرتبطة بمسارات التشخيص والأهداف العلاجية المحددة" studentName={student.fullName} nationalId={student.nationalId} grade={`${student.grade} - ${student.classRoom}`} />}
     <div className="grid gap-4 lg:grid-cols-2">
       <label className="rounded-2xl border border-slate-200 bg-white p-4 text-sm font-bold">الهدف طويل المدى
-        <SavedField multiline rows={4} aria-label="الهدف طويل المدى للأسبوع" value={plan.longTermGoal} onChange={event => update({ longTermGoal: event.target.value })} suggestions={[...diagnoses.map(item => COMMUNICATION_THERAPY_GUIDES[item].longTermGoal), `تحقيق أهداف الطالب للحروف المستهدفة (${targetLettersText || 'المحددة في الخطة'}) ومراجعة التقدم بالبيانات.`]} className="mt-2 w-full rounded-xl border border-slate-200 p-3 font-normal leading-7" />
+        <SavedField multiline rows={4} aria-label="الهدف طويل المدى للأسبوع" value={plan.longTermGoal === defaultPlan(student).longTermGoal && linkedLong ? linkedLong : plan.longTermGoal} onChange={event => update({ longTermGoal: event.target.value })} suggestions={[...diagnoses.map(item => COMMUNICATION_THERAPY_GUIDES[item].longTermGoal), `تحقيق أهداف الطالب للحروف المستهدفة (${targetLettersText || 'المحددة في الخطة'}) ومراجعة التقدم بالبيانات.`]} className="mt-2 w-full rounded-xl border border-slate-200 p-3 font-normal leading-7" />
       </label>
       <div className="rounded-2xl border border-slate-200 bg-white p-4">
         <h3 className="font-black">الأهداف قصيرة المدى لهذا الأسبوع</h3>
-        {plan.shortTermGoals.map((goal, index) => <label key={index} className="mt-3 block text-sm font-bold">الهدف {index + 1}
-          <SavedField multiline rows={3} aria-label={`الهدف الأسبوعي القصير ${index + 1}`} value={goal} onChange={event => update({ shortTermGoals: plan.shortTermGoals.map((item, i) => i === index ? event.target.value : item) })} suggestions={[...diagnoses.map(item => COMMUNICATION_THERAPY_GUIDES[item].shortTermGoal), 'تدريب الهدف النطقي الحالي في كلمة أو جملة وظيفية، وتسجيل المحاولات الصحيحة ودرجة المساعدة.']} className="mt-1 w-full rounded-xl border border-slate-200 p-3 font-normal leading-6" />
+        {(plan.shortTermGoals.every((g,i) => g === defaultPlan(student).shortTermGoals[i]) && weeklyTargets.length ? weeklyTargets : plan.shortTermGoals).map((goal, index) => <label key={index} className="mt-3 block text-sm font-bold">الهدف {index + 1}
+          <SavedField multiline rows={3} aria-label={`الهدف الأسبوعي القصير ${index + 1}`} value={goal} onChange={event => update({ shortTermGoals: (plan.shortTermGoals.every((g,i) => g === defaultPlan(student).shortTermGoals[i]) && weeklyTargets.length ? weeklyTargets : plan.shortTermGoals).map((item, i) => i === index ? event.target.value : item) })} suggestions={[...diagnoses.map(item => COMMUNICATION_THERAPY_GUIDES[item].shortTermGoal), 'تدريب الهدف النطقي الحالي في كلمة أو جملة وظيفية، وتسجيل المحاولات الصحيحة ودرجة المساعدة.']} className="mt-1 w-full rounded-xl border border-slate-200 p-3 font-normal leading-6" />
         </label>)}
       </div>
     </div>
