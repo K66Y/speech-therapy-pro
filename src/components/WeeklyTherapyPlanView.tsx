@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import type { StudentProfile, StudentWeeklyTherapyPlan, StudentWeeklyTherapySession } from '../types/speechTherapy';
 
 const DAYS = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس'] as const;
@@ -36,6 +36,7 @@ function defaultPlan(student: StudentProfile): StudentWeeklyTherapyPlan {
     }))
   );
   return {
+    diagnosisKey: diagnoses.slice().sort().join('|') || 'speech',
     weekOf: new Date().toISOString().slice(0, 10),
     longTermGoal: stuttering
       ? 'تعزيز المشاركة والتواصل المريح في مواقف الحياة اليومية، وفق خط أساس فردي ومراجعة دورية للأثر الوظيفي.'
@@ -52,14 +53,48 @@ function defaultPlan(student: StudentProfile): StudentWeeklyTherapyPlan {
 
 export const WeeklyTherapyPlanView: React.FC<{ student: StudentProfile; onUpdateStudent: (student: StudentProfile) => void }> = ({ student, onUpdateStudent }) => {
   const diagnoses = student.communicationDiagnoses || [];
-  const plan = useMemo(() => student.weeklyTherapyPlan || defaultPlan(student), [student.id, student.weeklyTherapyPlan, diagnoses.join('|')]);
+  const diagnosisKey = diagnoses.slice().sort().join('|') || 'speech';
+  const plan = useMemo(() => student.weeklyTherapyPlan || defaultPlan(student), [student.id, student.weeklyTherapyPlan, diagnosisKey]);
   const update = (changes: Partial<StudentWeeklyTherapyPlan>) => onUpdateStudent({ ...student, weeklyTherapyPlan: { ...plan, ...changes } });
+  useEffect(() => {
+    const existing = student.weeklyTherapyPlan;
+    if (!existing) {
+      onUpdateStudent({ ...student, weeklyTherapyPlan: defaultPlan(student) });
+      return;
+    }
+    if (existing.diagnosisKey === diagnosisKey) return;
+    const previousDiagnoses = existing.diagnosisKey === 'speech' ? [] : existing.diagnosisKey.split('|') as Diagnosis[];
+    const previousTemplate = defaultPlan({ ...student, communicationDiagnoses: previousDiagnoses });
+    const nextTemplate = defaultPlan(student);
+    const refreshedSessions = existing.sessions.map((session, index) => {
+      const before = previousTemplate.sessions[index];
+      const next = nextTemplate.sessions[index];
+      if (!before || !next) return session;
+      return {
+        ...next,
+        id: session.id,
+        status: session.status,
+        focus: session.focus === before.focus ? next.focus : session.focus,
+        activities: session.activities === before.activities ? next.activities : session.activities,
+        breathingPractice: session.breathingPractice === before.breathingPractice ? next.breathingPractice : session.breathingPractice,
+        homePractice: session.homePractice === before.homePractice ? next.homePractice : session.homePractice
+      };
+    });
+    onUpdateStudent({
+      ...student,
+      weeklyTherapyPlan: {
+        ...existing,
+        diagnosisKey,
+        longTermGoal: existing.longTermGoal === previousTemplate.longTermGoal ? nextTemplate.longTermGoal : existing.longTermGoal,
+        shortTermGoals: existing.shortTermGoals.map((goal, index) => goal === previousTemplate.shortTermGoals[index] ? nextTemplate.shortTermGoals[index] || goal : goal),
+        sessions: refreshedSessions
+      }
+    });
+  }, [student.id, diagnosisKey, student.weeklyTherapyPlan?.diagnosisKey]);
   const updateSession = (id: string, changes: Partial<StudentWeeklyTherapySession>) => update({ sessions: plan.sessions.map(session => session.id === id ? { ...session, ...changes } : session) });
   const toggleDiagnosis = (diagnosis: Diagnosis) => {
     const next = diagnoses.includes(diagnosis) ? diagnoses.filter(item => item !== diagnosis) : [...diagnoses, diagnosis];
-    const updated = { ...student, communicationDiagnoses: next };
-    if (!student.weeklyTherapyPlan) updated.weeklyTherapyPlan = defaultPlan(updated);
-    onUpdateStudent(updated);
+    onUpdateStudent({ ...student, communicationDiagnoses: next });
   };
 
   return <section dir="rtl" className="space-y-5">
