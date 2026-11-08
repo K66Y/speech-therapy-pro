@@ -22,6 +22,7 @@ import { EditableText } from './EditableText';
 import { SavedField } from './SavedField';
 import { SavedSelect } from './SavedSelect';
 import { ChoicePicker, homeworkSuggestions, sessionNotesSuggestions } from './ChoicePicker';
+import { COMMUNICATION_THERAPY_GUIDES } from '../data/communicationTherapyGuides';
 
 interface DailySessionViewProps {
   student: StudentProfile;
