@@ -281,96 +281,47 @@ export const DiagnosisView: React.FC<DiagnosisViewProps> = ({
 
   // توليد الخلاصة الإكلينيكية آلياً بناءً على التشخيص الميداني
   const handleAutoGenerateSummary = () => {
-    const substitutedLetters: string[] = [];
-    const distortedLetters: string[] = [];
-    const omittedLetters: string[] = [];
-    const addedLetters: string[] = [];
-    const positionsAffected = new Set<string>();
-
-    const summaryLetters = letterView === 'single' ? [selectedLetter] : letterView === 'targets' && student.targetLetters?.length ? student.targetLetters : ARABIC_LETTERS_LIST;
-    let scopedAttempts = 0;
-    let scopedCorrect = 0;
-    summaryLetters.forEach(letter => {
-      const res = data.lettersResults[letter];
-      if (!res) return;
-
-      (['beginning', 'middle', 'end'] as const).forEach(pos => {
-        const prod = res[pos]?.production;
-        if (prod) {
-          scopedAttempts += 1;
-          if (prod === 'صحيح') scopedCorrect += 1;
-        }
-        const posArabic = pos === 'beginning' ? 'أول الكلمة' : pos === 'middle' ? 'وسط الكلمة' : 'آخر الكلمة';
-
-        if (prod === 'إبدال') {
-          substitutedLetters.push(letter);
-          positionsAffected.add(posArabic);
-        } else if (prod === 'تشويه') {
-          distortedLetters.push(letter);
-          positionsAffected.add(posArabic);
-        } else if (prod === 'حذف') {
-          omittedLetters.push(letter);
-          positionsAffected.add(posArabic);
-        } else if (prod === 'إضافة') {
-          addedLetters.push(letter);
-          positionsAffected.add(posArabic);
-        }
-      });
-    });
-    const scopedScore = scopedAttempts > 0 ? Math.round((scopedCorrect / scopedAttempts) * 100) : 0;
-
-    const uniqueSub = Array.from(new Set(substitutedLetters));
-    const uniqueDist = Array.from(new Set(distortedLetters));
-    const uniqueOm = Array.from(new Set(omittedLetters));
-    const uniqueAdded = Array.from(new Set(addedLetters));
-    const totalErrors = uniqueSub.length + uniqueDist.length + uniqueOm.length + uniqueAdded.length;
-
-    const targetLetters = student.targetLetters || [];
-    let summary = `ملخص النتائج المدخلة في اختبار النطق للطالب (${student.fullName})؛ `;
-    if (letterView === 'single') summary += `نطاق هذه الخلاصة هو حرف (${selectedLetter}) فقط. `;
-    else if (targetLetters.length) summary += `الحروف المستهدفة المسجلة في خطة الطالب هي (${targetLetters.join('، ')}). `;
-
-    if (totalErrors === 0) {
-      summary += `لم تُسجّل أخطاء ضمن المواضع المقيمة، وبلغت نسبة الأداء المحسوبة في نطاق العرض ${scopedScore}%. تُراجع النتائج مع اكتمال الفحص قبل اعتماد التشخيص أو قرار إنهاء التدريب.`;
+    const sections: string[] = [];
+    const selectedTargets = (student.targetLetters || []).filter(letter => ARABIC_LETTERS_LIST.includes(letter));
+    if (selectedTargets.length) {
+      const findings: string[] = [];
+      for (const letter of selectedTargets) {
+        const result = data.lettersResults[letter];
+        const positions = ([
+          ['beginning', 'أول الكلمة'],
+          ['middle', 'وسط الكلمة'],
+          ['end', 'آخر الكلمة']
+        ] as const).filter(([key]) => result?.[key]?.production && result[key].production !== 'صحيح')
+          .map(([key]) => `${key === 'beginning' ? 'أول الكلمة' : key === 'middle' ? 'وسط الكلمة' : 'آخر الكلمة'}: ${result?.[key]?.production}`);
+        if (positions.length) findings.push(`الحرف (${letter}) — ${positions.join('، ')}`);
+      }
+      sections.push(findings.length
+        ? `نتائج الحروف المستهدفة: ${findings.join('؛ ')}.`
+        : 'لم تُسجّل نتيجة خطأ للحروف المستهدفة في المواضع المدخلة. لا يُعد ذلك حكمًا نهائيًا قبل استكمال العينة ومراجعتها.');
+      sections.push(`نسبة الأداء في فحص الحروف: ${currentScore}% (تُفسر ضمن العينة المسجلة فقط).`);
     } else {
-      summary += `أظهرت نتائج التقييم في نطاق العرض وجود اضطرابات نطقية محددة، وبلغت نسبة الأداء المحسوبة (${scopedScore}%). `;
-
-      const detailsList: string[] = [];
-      if (uniqueSub.length > 0) {
-        let subText = `إبدال صوتي في حرف (${uniqueSub.join('، ')})`;
-
-
-
-        detailsList.push(subText);
-      }
-
-      if (uniqueDist.length > 0) {
-        let distText = `تشويه صوتي في حرف (${uniqueDist.join('، ')})`;
-        
-        detailsList.push(distText);
-      }
-
-      if (uniqueOm.length > 0) {
-        detailsList.push(`حذف صوتي في حرف (${uniqueOm.join('، ')})`);
-      }
-
-      if (uniqueAdded.length) detailsList.push(`إضافة صوتية في الحروف (${uniqueAdded.join('، ')})`);
-      summary += `وتتمثل أبرز الملاحظات في: ${detailsList.join('، ')}. `;
-      summary += `المواضع الأكثر تأثراً: (${Array.from(positionsAffected).join(' و ')}). `;
-      summary += `\n\nالخطة الإكلينيكية الموصى بها: `;
-      summary += `1) التدريب المباشر أمام المرآة (التغذية الراجعة البصرية) لمطابقة وضعية المخرج الصحيح. `;
-      summary += `2) استخدام خافض اللسان الطبي المعقم (التوجيه العضلي اللمسي) لتثبيت اللسان ومنع التدخلات الصوتية البديلة. `;
-      summary += `3) التدرج الصوتي الهرمي: عزل الصوت -> المقاطع الصوتية -> الكلمات الثلاث لكل موضع -> الجمل السياقية والتعميم.`;
+      sections.push('لا توجد حروف مستهدفة في ملف الطالب؛ لم يُجرَ فحص نطق الحروف ضمن هذه الخلاصة.');
     }
-
-    const updated = {
-      ...data,
-      summaryConclusion: summary,
-      summaryNeedsReview: false,
-      speechIntelligibilityScore: currentScore
+    const diagnoses = student.communicationDiagnoses || [];
+    const domains = diagnosticDomainsFor(data);
+    const domainLabels: Record<keyof DiagnosticDomains, string> = {
+      fluency: 'الطلاقة والتأتأة',
+      receptiveLanguage: 'اللغة الاستقبالية',
+      expressiveLanguage: 'اللغة التعبيرية',
+      vocabulary: 'الحصيلة اللغوية',
+      eyeContact: 'التواصل البصري والانتباه المشترك',
+      aphasia: 'الحبسة الكلامية'
     };
-
-    commitAssessment(updated);
+    if (diagnoses.length) sections.push(`المسارات التواصلية المسجلة: ${diagnoses.map(item => COMMUNICATION_THERAPY_GUIDES[item].label).join('، ')}. تسجيل المسار لا يغني عن استكمال التقييم.`);
+    sections.push('نتائج مجالات التقييم: ' + (Object.keys(domainLabels) as Array<keyof DiagnosticDomains>).map(key => {
+      const domain = domains[key];
+      const registered = key === 'fluency' ? diagnoses.includes('stuttering') : key === 'aphasia' ? diagnoses.includes('aphasia') : false;
+      const status = domain.status === 'لم يُقيّم' && registered ? 'مسجل ويحتاج إلى استكمال التقييم' : domain.status;
+      return `${domainLabels[key]}: ${status} — ${domain.evaluation}`;
+    }).join(' | '));
+    const recommendation = recommendationFor(data);
+    sections.push(`التوصية المختارة: ${recommendation.decision === 'needs_training' ? 'يوصى بتدريب' : 'لا يحتاج إلى تدريب حاليًا'}؛ ${recommendation.text}`);
+    commitAssessment({ ...data, summaryConclusion: sections.join('\\n\\n'), summaryNeedsReview: false });
     setGeneratedNotice(true);
     setTimeout(() => setGeneratedNotice(false), 3000);
   };
@@ -461,13 +412,13 @@ export const DiagnosisView: React.FC<DiagnosisViewProps> = ({
         </div>
       </div>
 
-          <div className="mb-3 flex flex-wrap items-center gap-2 text-xs font-bold print:hidden">
+          {!!student.targetLetters?.length && <div className="mb-3 flex flex-wrap items-center gap-2 text-xs font-bold print:hidden">
             <button type="button" onClick={() => { setSearchTerm(''); setLetterView('all'); setErrorOnlyFilter(false); }} className={`rounded-lg border px-3 py-2 ${letterView === 'all' && !errorOnlyFilter ? 'bg-sky-800 text-white' : 'bg-white text-slate-700'}`}>جميع الحروف</button>
             <button type="button" onClick={() => { setSearchTerm(''); setLetterView('targets'); setErrorOnlyFilter(false); }} className={`rounded-lg border px-3 py-2 ${letterView === 'targets' ? 'bg-sky-800 text-white' : 'bg-white text-slate-700'}`}>الحروف المستهدفة ({student.targetLetters?.length || 0})</button>
             <button type="button" onClick={applyRecordedDiagnosisToTargets} className="rounded-lg border border-sky-300 bg-sky-50 px-3 py-2 text-sky-900">تطبيق الاضطراب المسجل على الحروف المستهدفة</button>
             <button type="button" onClick={() => { setSearchTerm(''); setLetterView('all'); setErrorOnlyFilter(true); }} className={`rounded-lg border px-3 py-2 ${errorOnlyFilter ? 'bg-rose-700 text-white' : 'bg-white text-slate-700'}`}>تحديد الحروف المضطربة</button>
             <span className="text-slate-500">الحرف المختار: {selectedLetter}</span>
-          </div>
+          </div>}
 
           {/* Main Diagnostic Sheet */}
       <div className="bg-white rounded-3xl border border-sky-100 shadow-sm p-6 sm:p-10 printable-document printable-sheet print:p-0 print:border-none print:shadow-none">
@@ -479,6 +430,7 @@ export const DiagnosisView: React.FC<DiagnosisViewProps> = ({
           grade={`${student.grade} - ${student.classRoom}`}
         />
 
+        {!!student.targetLetters?.length ? <>
         {/* Diagnostic Tools Banner & Manual Score Edit */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <div className="bg-sky-50/80 border border-sky-200 rounded-2xl p-4 flex flex-col justify-between">
@@ -853,6 +805,8 @@ export const DiagnosisView: React.FC<DiagnosisViewProps> = ({
             </tbody>
           </table>
         </div>
+
+        </> : <p className="mb-6 rounded-xl border border-sky-200 bg-sky-50 p-4 text-sm leading-7 text-sky-950">لا توجد حروف مستهدفة في هذا الملف؛ لذلك أُخفي جدول الحروف ونسبة وضوحها. استخدم مجالات الطلاقة واللغة والتواصل أدناه لتسجيل التقييم المناسب.</p>}
 
         <section className="mb-8 rounded-2xl border border-emerald-200 bg-emerald-50/60 p-5" aria-labelledby="communication-diagnosis-title">
           <h3 id="communication-diagnosis-title" className="text-base font-black text-emerald-950">التشخيصات التواصلية المسجلة</h3>
