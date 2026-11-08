@@ -54,6 +54,7 @@ import { ShortTermPlanView } from './components/ShortTermPlanView';
 import { DailySessionView } from './components/DailySessionView';
 import { HomeworkView } from './components/HomeworkView';
 import { FinalReportView } from './components/FinalReportView';
+import { WeeklyTherapyPlanView } from './components/WeeklyTherapyPlanView';
 import { NewStudentModal } from './components/NewStudentModal';
 import { createNewStudentRecords } from './data/studentFactory';
 import { AuthScreen } from './components/AuthScreen';
@@ -72,6 +73,7 @@ type ActiveTab =
   | 'shortterm'
   | 'sessions'
   | 'homework'
+  | 'weekly'
   | 'finalreport';
 
 const LEGACY_CACHE_OWNER_KEY = 'st_legacy_workspace_owner_uid';
@@ -398,6 +400,7 @@ function WorkspaceApp({ user }: { user: User | null }) {
     { id: 'shortterm', label: 'الخطة قصيرة المدى', icon: Target },
     { id: 'sessions', label: 'سجل الجلسات اليومية', icon: Calendar },
     { id: 'homework', label: 'أوراق العمل والواجبات', icon: Home },
+    { id: 'weekly', label: 'الخطة والجدول الأسبوعي', icon: Calendar },
     { id: 'finalreport', label: 'التقرير النطقي النهائي', icon: FileCheck }
   ];
 
@@ -752,6 +755,17 @@ function WorkspaceApp({ user }: { user: User | null }) {
             onUpdateHomework={updated =>
               setHomeworkList(prev => ({ ...prev, [activeStudentId]: [updated, ...(prev[activeStudentId] || []).filter(item => item.id !== updated.id)] }))
             }
+          />
+        )}
+
+        {activeTab === 'weekly' && (
+          <WeeklyTherapyPlanView
+            key={activeStudentId}
+            student={currentStudent}
+            onUpdateStudent={updated => {
+              setStudents(previous => previous.map(student => student.id === updated.id ? updated : student));
+              setCaseStudies(previous => previous[updated.id] ? { ...previous, [updated.id]: { ...previous[updated.id], student: updated } } : previous);
+            }}
           />
         )}
 
