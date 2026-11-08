@@ -25,6 +25,11 @@ export const DEFAULT_DIAGNOSTIC_DOMAINS: DiagnosticDomains = {
     status: 'ضمن المتوقع',
     skills: 'بدء التواصل البصري واستمراره بصورة طبيعية، وتوجيه الانتباه نحو المتحدث والمادة المعروضة، والتبادل البصري أثناء الحوار دون إجبار.',
     evaluation: 'تم تقييم الطالب وأثبت قدرته على توجيه الانتباه والملاحظة والتواصل البصري أثناء الحوار.'
+  },
+  aphasia: {
+    status: 'لم يُقيّم',
+    skills: 'فحص الفهم والتعبير والتسمية واستدعاء الكلمات والقراءة والكتابة والتواصل الوظيفي، مع توثيق نوع المهمة ودرجة المساندة. تُحدد المهام الملائمة بواسطة مختص وبعد مراجعة التاريخ الطبي واللغوي.',
+    evaluation: 'لم يُستكمل تقييم الحبسة الكلامية. لا يُعتمد هذا العنوان كتَشخيص من هذا النموذج وحده؛ تُسجل نتائج التقييم اللغوي الشامل ومصدر الإحالة وتوصيات الفريق المختص.'
   }
 };
 
@@ -33,7 +38,8 @@ const LEGACY_EVALUATION_PREFIXES: Record<keyof DiagnosticDomains, string> = {
   receptiveLanguage: 'يُقارن أداء الطالب بمتطلبات عمره',
   expressiveLanguage: 'تُحلل عينة لغوية في التسمية',
   vocabulary: 'تُراجع الحصيلة اللغوية استقباليًا',
-  eyeContact: 'تُلاحظ الاستجابة في مواقف فردية'
+  eyeContact: 'تُلاحظ الاستجابة في مواقف فردية',
+  aphasia: 'لم يُستكمل تقييم الحبسة الكلامية'
 };
 
 function mergeDomain<K extends keyof DiagnosticDomains>(key: K, saved?: DiagnosticDomains[K]): DiagnosticDomains[K] {
@@ -54,7 +60,8 @@ export function diagnosticDomainsFor(assessment: DiagnosticAssessment): Diagnost
     receptiveLanguage: mergeDomain('receptiveLanguage', saved?.receptiveLanguage),
     expressiveLanguage: mergeDomain('expressiveLanguage', saved?.expressiveLanguage),
     vocabulary: mergeDomain('vocabulary', saved?.vocabulary),
-    eyeContact: mergeDomain('eyeContact', saved?.eyeContact)
+    eyeContact: mergeDomain('eyeContact', saved?.eyeContact),
+    aphasia: mergeDomain('aphasia', saved?.aphasia)
   };
 }
 
