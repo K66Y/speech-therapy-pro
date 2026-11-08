@@ -32,6 +32,7 @@ import { SCHOOL_KLICHE } from '../data/sampleData';
 import { getDocumentHijriDate, getDocumentGregorianDate } from './dateService';
 import { displayText } from './displayText';
 import { diagnosticDomainsFor, recommendationFor } from '../data/diagnosticDomains';
+import { COMMUNICATION_THERAPY_GUIDES } from '../data/communicationTherapyGuides';
 
 class TextRun extends DocxTextRun {
   constructor(options: ConstructorParameters<typeof DocxTextRun>[0]) {
@@ -609,6 +610,16 @@ export async function exportPlansDocx(
           })
       )
     ]),
+    ...((student.communicationDiagnoses || []).length ? [
+      new Paragraph({ heading: HeadingLevel.HEADING_2, alignment: AlignmentType.RIGHT, bidirectional: true, spacing: { before: 180, after: 80 }, children: [new TextRun({ text: 'أهداف التواصل طويلة المدى للتأتأة والحبسة', font: 'Cairo', bold: true, color: PRIMARY_COLOR, rightToLeft: true })] }),
+      ...(student.communicationDiagnoses || []).flatMap(diagnosis => {
+        const guide = COMMUNICATION_THERAPY_GUIDES[diagnosis];
+        return [
+          new Paragraph({ alignment: AlignmentType.RIGHT, bidirectional: true, spacing: { before: 80, after: 40 }, children: [new TextRun({ text: guide.label, font: 'Cairo', bold: true, color: PRIMARY_COLOR, rightToLeft: true })] }),
+          new Paragraph({ alignment: AlignmentType.RIGHT, bidirectional: true, spacing: { after: 80 }, children: [new TextRun({ text: longTermPlan.communicationGoals?.[diagnosis] || guide.longTermGoal, font: 'Cairo', rightToLeft: true })] })
+        ];
+      })
+    ] : []),
 
     new Paragraph({
       heading: HeadingLevel.HEADING_2,
@@ -697,6 +708,18 @@ export async function exportPlansDocx(
           })
       )
     ]),
+    ...((student.communicationDiagnoses || []).length ? [
+      new Paragraph({ heading: HeadingLevel.HEADING_2, alignment: AlignmentType.RIGHT, bidirectional: true, spacing: { before: 160, after: 80 }, children: [new TextRun({ text: 'الأهداف الإجرائية للتأتأة والحبسة الكلامية', font: 'Cairo', bold: true, color: PRIMARY_COLOR, rightToLeft: true })] }),
+      ...(student.communicationDiagnoses || []).flatMap(diagnosis => {
+        const guide = COMMUNICATION_THERAPY_GUIDES[diagnosis];
+        return [
+          new Paragraph({ alignment: AlignmentType.RIGHT, bidirectional: true, spacing: { before: 70, after: 40 }, children: [new TextRun({ text: guide.label, font: 'Cairo', bold: true, color: PRIMARY_COLOR, rightToLeft: true })] }),
+          new Paragraph({ alignment: AlignmentType.RIGHT, bidirectional: true, spacing: { after: 60 }, children: [new TextRun({ text: shortTermPlan.communicationObjectives?.[diagnosis] || guide.shortTermGoal, font: 'Cairo', rightToLeft: true })] }),
+          ...guide.methods.map(method => new Paragraph({ alignment: AlignmentType.RIGHT, bidirectional: true, spacing: { after: 40 }, children: [new TextRun({ text: '• ' + method, font: 'Cairo', rightToLeft: true })] })),
+          new Paragraph({ alignment: AlignmentType.RIGHT, bidirectional: true, spacing: { after: 100 }, children: [new TextRun({ text: 'تنسيق التنفس والكلام: ' + guide.breathing, font: 'Cairo', rightToLeft: true })] })
+        ];
+      })
+    ] : []),
 
     new Paragraph({
       heading: HeadingLevel.HEADING_2,
@@ -925,6 +948,17 @@ export async function exportHomeworkDocx(student: StudentProfile, homework: Home
               new TextRun({ text: parentMethod, font: 'Cairo', rightToLeft: true })
             ]
           }),
+
+          ...((student.communicationDiagnoses || []).length ? [
+            new Paragraph({ heading: HeadingLevel.HEADING_2, alignment: AlignmentType.RIGHT, bidirectional: true, spacing: { before: 120, after: 80 }, children: [new TextRun({ text: 'واجب التواصل والطلاقة المرتبط بتشخيص الطالب', font: 'Cairo', bold: true, color: PRIMARY_COLOR, size: 22, rightToLeft: true })] }),
+            ...(student.communicationDiagnoses || []).flatMap(diagnosis => {
+              const guide = COMMUNICATION_THERAPY_GUIDES[diagnosis];
+              return [
+                new Paragraph({ alignment: AlignmentType.RIGHT, bidirectional: true, spacing: { before: 60, after: 40 }, children: [new TextRun({ text: guide.label, font: 'Cairo', bold: true, color: PRIMARY_COLOR, rightToLeft: true })] }),
+                new Paragraph({ alignment: AlignmentType.RIGHT, bidirectional: true, spacing: { after: 80 }, children: [new TextRun({ text: homework.communicationHomePractice?.[diagnosis] || guide.homePractice, font: 'Cairo', rightToLeft: true })] })
+              ];
+            })
+          ] : []),
 
           new Paragraph({
             heading: HeadingLevel.HEADING_2,
