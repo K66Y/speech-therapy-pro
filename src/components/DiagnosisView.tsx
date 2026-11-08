@@ -7,8 +7,10 @@ import {
   DiagnosticAssessment,
   ArabicLetterKey,
   DiagnosticDomains,
-  DiagnosticDomainStatus
+  DiagnosticDomainStatus,
+  CommunicationDiagnosis
 } from '../types/speechTherapy';
+import { COMMUNICATION_THERAPY_GUIDES } from '../data/communicationTherapyGuides';
 import { ARABIC_LETTERS_LIST, ARABIC_LETTERS_MAP } from '../data/arabicLettersData';
 import { diagnosticDomainsFor, recommendationFor } from '../data/diagnosticDomains';
 import { SCHOOL_KLICHE } from '../data/sampleData';
@@ -32,6 +34,7 @@ interface DiagnosisViewProps {
   student: StudentProfile;
   assessment: DiagnosticAssessment;
   onUpdateAssessment: (updated: DiagnosticAssessment) => void;
+  onUpdateStudent: (updated: StudentProfile) => void;
 }
 
 const DIAGNOSTIC_DOMAIN_SECTIONS: Array<{
@@ -53,7 +56,8 @@ const DIAGNOSTIC_DOMAIN_STATUSES: DiagnosticDomainStatus[] = ['لم يُقيّم
 export const DiagnosisView: React.FC<DiagnosisViewProps> = ({
   student,
   assessment,
-  onUpdateAssessment
+  onUpdateAssessment,
+  onUpdateStudent
 }) => {
   const [data, setData] = useState<DiagnosticAssessment>(assessment);
   const [selectedLetter, setSelectedLetter] = useState<ArabicLetterKey>(student.targetLetters?.[0] || 'ر');
@@ -849,6 +853,33 @@ export const DiagnosisView: React.FC<DiagnosisViewProps> = ({
             </tbody>
           </table>
         </div>
+
+        <section className="mb-8 rounded-2xl border border-emerald-200 bg-emerald-50/60 p-5" aria-labelledby="communication-diagnosis-title">
+          <h3 id="communication-diagnosis-title" className="text-base font-black text-emerald-950">التشخيصات التواصلية المسجلة</h3>
+          <p className="mt-1 text-xs leading-6 text-slate-700">اختر التأتأة أو الحبسة بعد التقييم ومراجعة المعلومات المختصة. الاختيار محفوظ مع ملف الطالب ويظهر في الجلسات والخطط والواجبات.</p>
+          <div className="mt-3 flex flex-wrap gap-3 print:hidden">
+            {(['stuttering', 'aphasia'] as CommunicationDiagnosis[]).map(diagnosis => (
+              <label key={diagnosis} className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-white px-4 py-3 text-sm font-bold">
+                <input type="checkbox" checked={(student.communicationDiagnoses || []).includes(diagnosis)} onChange={event => {
+                  const previous = student.communicationDiagnoses || [];
+                  const communicationDiagnoses = event.target.checked
+                    ? [...previous, diagnosis]
+                    : previous.filter(item => item !== diagnosis);
+                  onUpdateStudent({ ...student, communicationDiagnoses });
+                }} />
+                {COMMUNICATION_THERAPY_GUIDES[diagnosis].label}
+              </label>
+            ))}
+          </div>
+          {(student.communicationDiagnoses || []).map(diagnosis => <article key={diagnosis} className="mt-4 rounded-xl border border-white bg-white p-4">
+            <h4 className="font-black text-emerald-950">{COMMUNICATION_THERAPY_GUIDES[diagnosis].label}</h4>
+            <p className="mt-2 text-sm leading-7">{COMMUNICATION_THERAPY_GUIDES[diagnosis].assessment}</p>
+            <p className="mt-2 text-sm leading-7"><strong>تنسيق التنفس والكلام:</strong> {COMMUNICATION_THERAPY_GUIDES[diagnosis].breathing}</p>
+            <div className="mt-2 flex flex-wrap gap-3 text-xs text-sky-800 print:hidden">
+              {COMMUNICATION_THERAPY_GUIDES[diagnosis].references.map(reference => <a key={reference.url} href={reference.url} target="_blank" rel="noreferrer" className="underline">{reference.label}</a>)}
+            </div>
+          </article>)}
+        </section>
 
         <section className="mb-8 space-y-4" aria-labelledby="supporting-assessments-title">
           <div className="flex items-center gap-2 border-b border-sky-200 pb-3">
