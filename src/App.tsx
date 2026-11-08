@@ -741,6 +741,8 @@ function WorkspaceApp({ user }: { user: User | null }) {
             key={activeStudentId}
             student={currentStudent}
             sessions={currentSessions}
+            shortTermPlan={linkedCurrentSTPlan}
+            onUpdateShortTermPlan={updated => setShortTermPlans(prev => ({ ...prev, [activeStudentId]: updated }))}
             onUpdateSession={updated => setDailySessions(prev => ({ ...prev, [activeStudentId]: (prev[activeStudentId] || []).map(session => session.id === updated.id ? updated : session) }))}
             onDeleteSession={id => setDailySessions(prev => ({ ...prev, [activeStudentId]: (prev[activeStudentId] || []).filter(session => session.id !== id) }))}
             onAddSession={newSes =>
@@ -764,6 +766,8 @@ function WorkspaceApp({ user }: { user: User | null }) {
 
         {(activeTab === 'weeklySchedule' || activeTab === 'weeklyPlan') && (
           <WeeklyTherapyPlanView
+            shortPlan={linkedCurrentSTPlan}
+            longPlan={linkedCurrentLTPlan}
             key={activeStudentId}
             mode={activeTab === 'weeklySchedule' ? 'schedule' : 'plan'}
             student={currentStudent}
