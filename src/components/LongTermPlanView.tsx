@@ -142,7 +142,7 @@ export const LongTermPlanView: React.FC<LongTermPlanViewProps> = ({
           </section>}
 
           {/* Goals Table */}
-          <div className="mb-6">
+          {!!student.targetLetters?.length && <div className="mb-6">
             <h3 className="text-base font-black text-slate-900 mb-3 flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-600 inline-block"></span>
               أولاً: صياغة الأهداف العامة طويلة المدى ومعايير التحقق
@@ -213,7 +213,7 @@ export const LongTermPlanView: React.FC<LongTermPlanViewProps> = ({
                 </div>
               ))}
             </div>
-          </div>
+          </div>}
 
           {/* Clinical Tools in the Long Term Plan */}
           <div className="mb-6">

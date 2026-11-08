@@ -403,7 +403,8 @@ export async function exportDiagnosisDocx(student: StudentProfile, assessment: D
     ['مهارات وتقييم اللغة الاستقبالية', supportingDomains.receptiveLanguage],
     ['مهارات وتقييم اللغة التعبيرية', supportingDomains.expressiveLanguage],
     ['تقييم الحصيلة اللغوية', supportingDomains.vocabulary],
-    ['تقييم التواصل البصري', supportingDomains.eyeContact]
+    ['تقييم التواصل البصري', supportingDomains.eyeContact],
+    ['تقييم الحبسة الكلامية', supportingDomains.aphasia]
   ] as const;
   const rows = [
     new TableRow({
@@ -913,6 +914,15 @@ export async function exportLettersGuideDocx(lettersMap = ARABIC_LETTERS_MAP) {
  * تصدير استمارة الواجب المنزلي (.docx)
  */
 export async function exportHomeworkDocx(student: StudentProfile, homework: HomeworkSheet) {
+  const track = homework.practiceType ?? (student.targetLetters?.length ? 'letters' : student.communicationDiagnoses?.[0] || 'letters');
+  if (track !== 'letters') {
+    const guide = COMMUNICATION_THERAPY_GUIDES[track];
+    const paragraphs = [homework.dateGiven, homework.communicationHomePractice?.[track] ?? guide.homePractice, guide.methods[0], guide.breathing, homework.parentNotes, homework.specialistFeedback, student.guardianName].filter(Boolean).map(text => new Paragraph({ alignment: AlignmentType.RIGHT, bidirectional: true, children: [new TextRun({ text, font: 'Cairo', rightToLeft: true })] }));
+    const header = await createOfficialHeaderParagraphs('واجب منزلي · ' + guide.label, student.fullName);
+    const doc = new Document({ sections: [{ children: [...header, ...paragraphs] }] });
+    saveAs(await Packer.toBlob(doc), 'واجب_' + guide.label + '_' + student.fullName + '.docx');
+    return;
+  }
   const parentMethod = shouldUpgradeParentTrainingGuide(homework.mirrorInstructionAtHome)
     ? parentTrainingGuide(homework.targetLetter)
     : homework.mirrorInstructionAtHome;
@@ -949,16 +959,7 @@ export async function exportHomeworkDocx(student: StudentProfile, homework: Home
             ]
           }),
 
-          ...((student.communicationDiagnoses || []).length ? [
-            new Paragraph({ heading: HeadingLevel.HEADING_2, alignment: AlignmentType.RIGHT, bidirectional: true, spacing: { before: 120, after: 80 }, children: [new TextRun({ text: 'واجب التواصل والطلاقة المرتبط بتشخيص الطالب', font: 'Cairo', bold: true, color: PRIMARY_COLOR, size: 22, rightToLeft: true })] }),
-            ...(student.communicationDiagnoses || []).flatMap(diagnosis => {
-              const guide = COMMUNICATION_THERAPY_GUIDES[diagnosis];
-              return [
-                new Paragraph({ alignment: AlignmentType.RIGHT, bidirectional: true, spacing: { before: 60, after: 40 }, children: [new TextRun({ text: guide.label, font: 'Cairo', bold: true, color: PRIMARY_COLOR, rightToLeft: true })] }),
-                new Paragraph({ alignment: AlignmentType.RIGHT, bidirectional: true, spacing: { after: 80 }, children: [new TextRun({ text: homework.communicationHomePractice?.[diagnosis] || guide.homePractice, font: 'Cairo', rightToLeft: true })] })
-              ];
-            })
-          ] : []),
+
 
           new Paragraph({
             heading: HeadingLevel.HEADING_2,

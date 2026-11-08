@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StudentProfile, ArabicLetterKey } from '../types/speechTherapy';
+import { StudentProfile, ArabicLetterKey, CommunicationDiagnosis } from '../types/speechTherapy';
 import { ARABIC_LETTERS_LIST } from '../data/arabicLettersData';
 import { SPECIALIST_NAME } from '../data/sampleData';
 import { getLiveHijriDate } from '../services/dateService';
@@ -22,9 +22,11 @@ export const NewStudentModal: React.FC<NewStudentModalProps> = ({
   const [classRoom, setClassRoom] = useState('فصل (أ)');
   const [age, setAge] = useState('6–7 سنوات (تقديري)');
   const [guardianName, setGuardianName] = useState('');
-  const [diagnosisCategories, setDiagnosisCategories] = useState<string[]>(['إبدال']);
+  const [diagnosisCategories, setDiagnosisCategories] = useState<string[]>([]);
   const [customDiagnosis, setCustomDiagnosis] = useState('');
-  const [targetLetters, setTargetLetters] = useState<ArabicLetterKey[]>(['ر']);
+  const [targetLetters, setTargetLetters] = useState<ArabicLetterKey[]>([]);
+  const [communicationDiagnoses, setCommunicationDiagnoses] = useState<CommunicationDiagnosis[]>([]);
+  const toggleCommunicationDiagnosis = (d: CommunicationDiagnosis) => setCommunicationDiagnoses(prev => prev.includes(d) ? prev.filter(item => item !== d) : [...prev,d]);
   const [errorMessage, setErrorMessage] = useState('');
 
   if (!isOpen) return null;
@@ -57,8 +59,8 @@ export const NewStudentModal: React.FC<NewStudentModalProps> = ({
       setErrorMessage('يرجى إدخال رقم السجل المدني');
       return;
     }
-    if (!targetLetters.length) {
-      setErrorMessage('يرجى اختيار حرف واحد على الأقل للخطة');
+    if (!targetLetters.length && !communicationDiagnoses.length) {
+      setErrorMessage('اختر حرفاً مستهدفاً أو أحد مسارات التواصل');
       return;
     }
 
@@ -76,6 +78,7 @@ export const NewStudentModal: React.FC<NewStudentModalProps> = ({
       diagnosisCategory: [...diagnosisCategories, customDiagnosis.trim()].filter(Boolean).join('، '),
       diagnosisCategories: [...diagnosisCategories, customDiagnosis.trim()].filter(Boolean),
       targetLetters,
+      communicationDiagnoses,
       status: 'active'
     };
 
@@ -225,9 +228,20 @@ export const NewStudentModal: React.FC<NewStudentModalProps> = ({
                     <button type="button" key={letter} onClick={() => toggleTargetLetter(letter)} className={`rounded-md border p-1.5 font-black ${targetLetters.includes(letter) ? 'bg-sky-800 text-white border-sky-900' : 'bg-slate-50 text-slate-700 border-slate-200'}`}>{letter}</button>
                   ))}
                 </div>
-                <p className="mt-1 text-[11px] text-slate-500">المحدد: {targetLetters.length ? targetLetters.join('، ') : 'اختر حرفًا واحدًا على الأقل'}</p>
+                <p className="mt-1 text-[11px] text-slate-500">المحدد: {targetLetters.length ? targetLetters.join('، ') : 'لا توجد حروف مستهدفة'}</p>
               </div>
             </div>
+            <fieldset className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50/60 p-3">
+              <legend className="px-1 font-bold text-emerald-950">مسارات التواصل (مستقلة عن الحروف)</legend>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {([{ key: 'stuttering', label: 'تأتأة / اضطراب طلاقة' }, { key: 'aphasia', label: 'حبسة كلامية' }] as const).map(item => (
+                  <label key={item.key} className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-white p-2 font-semibold">
+                    <input type="checkbox" checked={communicationDiagnoses.includes(item.key)} onChange={() => toggleCommunicationDiagnosis(item.key)} />{item.label}
+                  </label>
+                ))}
+              </div>
+              <p className="mt-2 text-[11px] leading-5 text-slate-600">يمكنك اختيار الحروف فقط، أو اضطراب التواصل فقط دون حرف، أو اختيار المسارين معًا. ستظهر لكل مسار أدواته وأهدافه بشكل مستقل.</p>
+            </fieldset>
           </div>
 
           {/* Action Buttons */}

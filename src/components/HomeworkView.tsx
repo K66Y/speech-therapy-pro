@@ -38,7 +38,8 @@ export const HomeworkView: React.FC<HomeworkViewProps> = ({
     homeworkList[0] || {
       id: 'hw-new',
       studentId: student.id,
-      targetLetter: 'ر',
+      targetLetter: student.targetLetters?.[0] || 'ر',
+      practiceType: student.targetLetters?.length ? 'letters' : student.communicationDiagnoses?.[0] || 'letters',
       dateGiven: getLiveHijriDate(),
       returnDate: getLiveHijriDate(),
       letterInstructionsForParent:
@@ -60,6 +61,8 @@ export const HomeworkView: React.FC<HomeworkViewProps> = ({
   );
 
   const [isExporting, setIsExporting] = useState(false);
+  const activePracticeType = activeHw.practiceType || (student.targetLetters?.length ? 'letters' : student.communicationDiagnoses?.[0] || 'letters');
+  const availablePracticeTypes = [...(student.targetLetters?.length ? ['letters' as const] : []), ...(student.communicationDiagnoses || [])];
   useEffect(() => {
     const targetSet = new Set(student.targetLetters || []);
     const matching = homeworkList.find(item => item.id === activeHw.id && (!targetSet.size || targetSet.has(item.targetLetter)))
@@ -67,7 +70,7 @@ export const HomeworkView: React.FC<HomeworkViewProps> = ({
     if (matching) setActiveHw(matching);
   }, [student.id, student.targetLetters, homeworkList, activeHw.id]);
   useEffect(() => {
-    if (!shouldUpgradeParentTrainingGuide(activeHw.mirrorInstructionAtHome)) return;
+    if (activePracticeType !== 'letters' || !shouldUpgradeParentTrainingGuide(activeHw.mirrorInstructionAtHome)) return;
     const mirrorInstructionAtHome = parentTrainingGuide(activeHw.targetLetter);
     const updated = { ...activeHw, mirrorInstructionAtHome };
     setActiveHw(updated);
@@ -78,8 +81,16 @@ export const HomeworkView: React.FC<HomeworkViewProps> = ({
     setActiveHw(updated);
     onUpdateHomework(updated);
   };
+  const selectPractice = (track: NonNullable<HomeworkSheet['practiceType']>) => {
+    const letter = student.targetLetters?.[0] || activeHw.targetLetter;
+    const existing = homeworkList.find(sheet => track === 'letters' ? (!sheet.practiceType || sheet.practiceType === 'letters') && student.targetLetters?.includes(sheet.targetLetter) : sheet.practiceType === track);
+    if (existing) { setActiveHw(existing); return; }
+    const guide = track !== 'letters' ? COMMUNICATION_THERAPY_GUIDES[track] : undefined;
+    const info = ARABIC_LETTERS_MAP[letter];
+    updateHomework({ id: 'hw-' + student.id + '-' + (track === 'letters' ? letter : track), practiceType: track, targetLetter: letter, parentNotes: '', specialistFeedback: '', dateGiven: getLiveHijriDate(), returnDate: getLiveHijriDate(), letterInstructionsForParent: guide ? '' : parentGuidanceSuggestions(letter)[0], mirrorInstructionAtHome: guide ? '' : parentTrainingGuide(letter), wordsToPractice: guide ? [] : homeworkPositions.flatMap((position,index) => info.examples[(['beginning','middle','end'] as const)[index]].words.map(item => ({ position, word: item.word, repetitionCount: 5 }))), sentenceToRepeat: guide ? '' : info.practiceSentences[0], communicationHomePractice: guide ? { [track]: guide.homePractice } : {} });
+  };
   const changeTargetLetter = (targetLetter: HomeworkSheet['targetLetter']) => {
-    const existing = homeworkList.find(item => item.targetLetter === targetLetter);
+    const existing = homeworkList.find(item => (!item.practiceType || item.practiceType === 'letters') && item.targetLetter === targetLetter);
     if (existing) { setActiveHw(existing); return; }
     const info = ARABIC_LETTERS_MAP[targetLetter];
     updateHomework({ id: `hw-${student.id}-${targetLetter}-${Date.now()}`, targetLetter, parentNotes: '', specialistFeedback: '', letterInstructionsForParent: parentGuidanceSuggestions(targetLetter)[0], mirrorInstructionAtHome: parentTrainingGuide(targetLetter), wordsToPractice: [
@@ -114,14 +125,17 @@ export const HomeworkView: React.FC<HomeworkViewProps> = ({
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs print:hidden">
         <div>
           <h2 className="text-lg font-black text-slate-900">
-            أوراق العمل والواجبات المنزلية لحرف [ {activeHw.targetLetter} ]
+            {activePracticeType === 'letters' ? `أوراق العمل والواجبات المنزلية لحرف (${activeHw.targetLetter})` : `واجبات منزلية: ${COMMUNICATION_THERAPY_GUIDES[activePracticeType].label}`}
           </h2>
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
-          <label className="text-xs font-bold text-slate-700">الحرف:
-            <select value={activeHw.targetLetter} onChange={e => changeTargetLetter(e.target.value as HomeworkSheet['targetLetter'])} className="mr-1 rounded-lg border border-slate-200 bg-white p-2">{(student.targetLetters?.length ? student.targetLetters : ARABIC_LETTERS_LIST).map(letter => <option key={letter}>{letter}</option>)}</select>
+          <label className="text-xs font-bold text-slate-700">مسار الواجب:
+            <select value={activePracticeType} onChange={event => selectPractice(event.target.value as NonNullable<HomeworkSheet['practiceType']>)} className="mr-1 rounded-lg border border-slate-200 bg-white p-2">{availablePracticeTypes.map(track => <option key={track} value={track}>{track === 'letters' ? 'الحروف' : COMMUNICATION_THERAPY_GUIDES[track].label}</option>)}</select>
           </label>
+          {activePracticeType === 'letters' && <label className="text-xs font-bold text-slate-700">الحرف:
+            <select value={activeHw.targetLetter} onChange={e => changeTargetLetter(e.target.value as HomeworkSheet['targetLetter'])} className="mr-1 rounded-lg border border-slate-200 bg-white p-2">{(student.targetLetters?.length ? student.targetLetters : ARABIC_LETTERS_LIST).map(letter => <option key={letter}>{letter}</option>)}</select>
+          </label>}
           <button
             onClick={handleExportDocx}
             disabled={isExporting}
@@ -145,8 +159,8 @@ export const HomeworkView: React.FC<HomeworkViewProps> = ({
       {/* Main Homework Sheet */}
       <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-6 sm:p-10 printable-sheet print:p-0 print:border-none print:shadow-none">
         <OfficialHeader
-          documentTitle={`استمارة الواجب المنزلي والمتابعة الأسرية لحرف [ ${activeHw.targetLetter} ]`}
-          subTitle="برنامج التدريب المنزلي اليومي أمام المرآة والشراكة بين المدرسة وولي الأمر"
+          documentTitle={activePracticeType === 'letters' ? `استمارة الواجب المنزلي والمتابعة الأسرية لحرف [ ${activeHw.targetLetter} ]` : `استمارة واجب منزلي: ${COMMUNICATION_THERAPY_GUIDES[activePracticeType].label}`}
+          subTitle={activePracticeType === 'letters' ? 'برنامج التدريب المنزلي اليومي للحرف المستهدف والشراكة بين المدرسة وولي الأمر' : 'تدريب منزلي وظيفي للمسار المحدد، وفق توجيه الأخصائي واحتياج الطالب'}
           studentName={student.fullName}
           nationalId={student.nationalId}
           grade={`${student.grade} - ${student.classRoom}`}
@@ -157,7 +171,7 @@ export const HomeworkView: React.FC<HomeworkViewProps> = ({
           <div>تاريخ إعادة الواجب<EditableText label="تاريخ إعادة الواجب" multiline={false} value={activeHw.returnDate} onSave={returnDate => updateHomework({ returnDate })} /></div>
         </div>
         {/* Instructions for parents */}
-        <div className="bg-emerald-50/70 border border-emerald-200 rounded-2xl p-5 mb-6 space-y-3">
+        {activePracticeType === 'letters' && <div className="bg-emerald-50/70 border border-emerald-200 rounded-2xl p-5 mb-6 space-y-3">
           <div className="flex items-center gap-2">
             <Heart className="w-5 h-5 text-emerald-700" />
             <h3 className="font-bold text-emerald-950 text-sm">
@@ -176,12 +190,20 @@ export const HomeworkView: React.FC<HomeworkViewProps> = ({
               <EditableText label="طريقة التدريب بالمرآة" value={activeHw.mirrorInstructionAtHome} onSave={mirrorInstructionAtHome => updateHomework({ mirrorInstructionAtHome })} onDelete={() => updateHomework({ mirrorInstructionAtHome: '' })} />
             </div>
           </div>
-        </div>
+        </div>}
 
-        {!!student.communicationDiagnoses?.length && <section className="mb-6 rounded-2xl border border-sky-200 bg-sky-50/60 p-5">
+        {activePracticeType !== 'letters' && <section className="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50/60 p-5">
+          <h3 className="font-black text-emerald-950">واجب منزلي مناسب لمسار {COMMUNICATION_THERAPY_GUIDES[activePracticeType].label}</h3>
+          <p className="mt-2 text-xs leading-6 text-slate-600">يظهر هنا واجب المسار المحدد فقط. عدّل النص ليلائم نتيجة التقييم، اهتمامات الطالب، ودرجة المساندة.</p>
+          <SavedField multiline rows={5} aria-label="واجب منزلي لهذا المسار" value={activeHw.communicationHomePractice?.[activePracticeType] ?? COMMUNICATION_THERAPY_GUIDES[activePracticeType].homePractice} onChange={event => updateHomework({ practiceType: activePracticeType, communicationHomePractice: { ...activeHw.communicationHomePractice, [activePracticeType]: event.target.value } })} className="mt-3 w-full rounded-xl border border-slate-200 bg-white p-3 leading-7" />
+          <p className="mt-3 rounded-lg bg-white p-3 text-xs leading-6"><strong>إرشاد تدريب الأخصائي:</strong> {COMMUNICATION_THERAPY_GUIDES[activePracticeType].methods[0]}</p>
+          <p className="mt-2 rounded-lg bg-amber-50 p-3 text-xs leading-6"><strong>ملاحظة التنفس:</strong> {COMMUNICATION_THERAPY_GUIDES[activePracticeType].breathing}</p>
+        </section>}
+
+        {!!student.communicationDiagnoses?.length && activePracticeType === 'letters' && <section className="mb-6 rounded-2xl border border-sky-200 bg-sky-50/60 p-5">
           <h3 className="font-black text-sky-950">واجب التواصل والطلاقة المرتبط بتشخيص الطالب</h3>
           <p className="mt-1 text-xs leading-6 text-slate-600">تظهر إرشادات الحالة المختارة، ويمكن تعديل نص الواجب قبل طباعته أو تصديره.</p>
-          {student.communicationDiagnoses.map((diagnosis: CommunicationDiagnosis) => {
+          {student.communicationDiagnoses.filter(diagnosis => diagnosis === activePracticeType).map((diagnosis: CommunicationDiagnosis) => {
             const guide = COMMUNICATION_THERAPY_GUIDES[diagnosis];
             return <label key={diagnosis} className="mt-3 block text-sm font-bold">{guide.label}
               <SavedField multiline rows={4} aria-label={`واجب منزلي: ${guide.label}`} value={activeHw.communicationHomePractice?.[diagnosis] ?? guide.homePractice} onChange={event => updateHomework({
@@ -189,11 +211,11 @@ export const HomeworkView: React.FC<HomeworkViewProps> = ({
               })} className="mt-1 w-full rounded-xl border border-slate-200 bg-white p-3 font-normal leading-7" />
             </label>;
           })}
-          {student.communicationDiagnoses.map(diagnosis => <p key={diagnosis} className="mt-3 rounded-lg bg-white p-3 text-xs leading-6"><strong>طريقة تدريب مناسبة في الجلسة:</strong> {COMMUNICATION_THERAPY_GUIDES[diagnosis].methods[0]}</p>)}
+          {student.communicationDiagnoses.filter(diagnosis => diagnosis === activePracticeType).map(diagnosis => <p key={diagnosis} className="mt-3 rounded-lg bg-white p-3 text-xs leading-6"><strong>طريقة تدريب مناسبة في الجلسة:</strong> {COMMUNICATION_THERAPY_GUIDES[diagnosis].methods[0]}</p>)}
         </section>}
 
-                {/* Practice Words Table with Stars / Repetition Checklist */}
-        <div className="mb-6">
+                {/* Practice Words Table with repetition checklist */}
+        {activePracticeType === 'letters' && <div className="mb-6">
           <h3 className="font-black text-slate-900 text-base mb-3">
             جدول متابعة تكرار الكلمات المستهدفة يومياً:
           </h3>
@@ -219,10 +241,10 @@ export const HomeworkView: React.FC<HomeworkViewProps> = ({
             </table>
             {practiceColumns.some(words => words.length > 3) && <details className="print:hidden mt-3 text-xs"><summary>كلمات إضافية محفوظة خارج جدول الطباعة</summary>{practiceColumns.map((words, pos) => words.slice(3).map((word, index) => <EditableText key={`${pos}-${index}`} label="كلمة إضافية" value={word.word} onSave={value => savePracticeWord(pos, index + 3, value)} onDelete={() => { const columns = homeworkColumns(activeHw); columns[pos].splice(index + 3, 1); updateHomework({ wordsToPractice: columns.flat() }); }} />))}</details>}
           </div>
-        </div>
+        </div>}
 
         {/* Practice sentence */}
-        <div className="bg-slate-50 border-2 border-emerald-800/30 rounded-2xl p-5 mb-6 text-center space-y-2">
+        {activePracticeType === 'letters' && <div className="bg-slate-50 border-2 border-emerald-800/30 rounded-2xl p-5 mb-6 text-center space-y-2">
           <span className="text-xs font-bold text-slate-500">
             الجملة النطقية المتكاملة للتدريب والتعميم:
           </span>
@@ -231,7 +253,7 @@ export const HomeworkView: React.FC<HomeworkViewProps> = ({
               <EditableText suggestions={ARABIC_LETTERS_MAP[activeHw.targetLetter].practiceSentences} label="جملة التدريب" value={activeHw.sentenceToRepeat} onSave={sentenceToRepeat => updateHomework({ sentenceToRepeat })} onDelete={() => updateHomework({ sentenceToRepeat: '' })} />
             </h4>
           </div>
-        </div>
+        </div>}
 
         {/* Parent Feedback & Signature */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200 mb-8 text-xs">
