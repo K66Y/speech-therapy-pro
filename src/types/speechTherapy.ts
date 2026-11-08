@@ -88,6 +88,7 @@ export interface StudentProfile {
   targetLetters?: ArabicLetterKey[];
   communicationDiagnoses?: CommunicationDiagnosis[];
   weeklyTherapyPlan?: StudentWeeklyTherapyPlan;
+  weeklyPlanHistory?: Record<string, StudentWeeklyTherapyPlan>;
   status: 'active' | 'graduated' | 'under_evaluation';
 }
 
