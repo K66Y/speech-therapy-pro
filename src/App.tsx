@@ -73,7 +73,8 @@ type ActiveTab =
   | 'shortterm'
   | 'sessions'
   | 'homework'
-  | 'weekly'
+  | 'weeklySchedule'
+  | 'weeklyPlan'
   | 'finalreport';
 
 const LEGACY_CACHE_OWNER_KEY = 'st_legacy_workspace_owner_uid';
@@ -400,7 +401,8 @@ function WorkspaceApp({ user }: { user: User | null }) {
     { id: 'shortterm', label: 'الخطة قصيرة المدى', icon: Target },
     { id: 'sessions', label: 'سجل الجلسات اليومية', icon: Calendar },
     { id: 'homework', label: 'أوراق العمل والواجبات', icon: Home },
-    { id: 'weekly', label: 'الخطة والجدول الأسبوعي', icon: Calendar },
+    { id: 'weeklySchedule', label: 'الجدول الأسبوعي (15 جلسة)', icon: Calendar },
+    { id: 'weeklyPlan', label: 'الخطة الأسبوعية لكل طالب', icon: Target },
     { id: 'finalreport', label: 'التقرير النطقي النهائي', icon: FileCheck }
   ];
 
@@ -700,9 +702,11 @@ function WorkspaceApp({ user }: { user: User | null }) {
           <DiagnosisView
             student={currentStudent}
             assessment={currentAssessment}
-            onUpdateAssessment={updated =>
-              setAssessments(prev => ({ ...prev, [activeStudentId]: updated }))
-            }
+            onUpdateAssessment={updated => setAssessments(prev => ({ ...prev, [activeStudentId]: updated }))}
+            onUpdateStudent={updated => {
+              setStudents(prev => prev.map(item => item.id === updated.id ? updated : item));
+              setCaseStudies(prev => prev[updated.id] ? { ...prev, [updated.id]: { ...prev[updated.id], student: updated } } : prev);
+            }}
           />
         )}
 
@@ -758,9 +762,10 @@ function WorkspaceApp({ user }: { user: User | null }) {
           />
         )}
 
-        {activeTab === 'weekly' && (
+        {(activeTab === 'weeklySchedule' || activeTab === 'weeklyPlan') && (
           <WeeklyTherapyPlanView
             key={activeStudentId}
+            mode={activeTab === 'weeklySchedule' ? 'schedule' : 'plan'}
             student={currentStudent}
             onUpdateStudent={updated => {
               setStudents(previous => previous.map(student => student.id === updated.id ? updated : student));

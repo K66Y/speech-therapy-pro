@@ -45,6 +45,8 @@ export interface LetterInfo {
   practiceSentences: string[];
 }
 
+export type CommunicationDiagnosis = 'stuttering' | 'aphasia';
+
 export interface StudentWeeklyTherapySession {
   id: string;
   day: 'الأحد' | 'الاثنين' | 'الثلاثاء' | 'الأربعاء' | 'الخميس';
@@ -80,7 +82,7 @@ export interface StudentProfile {
   diagnosisCategory: string; // لدغة رائية، لدغة سينية، حذف أصوات، إبدال كاف بتاء...
   diagnosisCategories?: string[];
   targetLetters?: ArabicLetterKey[];
-  communicationDiagnoses?: Array<'stuttering' | 'aphasia'>;
+  communicationDiagnoses?: CommunicationDiagnosis[];
   weeklyTherapyPlan?: StudentWeeklyTherapyPlan;
   status: 'active' | 'graduated' | 'under_evaluation';
 }
@@ -211,6 +213,7 @@ export interface LongTermPlan {
   semester: string;
   specialistName: string; // ظافر ناصر الشهراني
   goals: LongTermPlanGoal[];
+  communicationGoals?: Partial<Record<CommunicationDiagnosis, string>>;
   generalStrategies: string[];
   toolsUsed: string[];
   headmasterApproval: boolean;
@@ -242,6 +245,7 @@ export interface ShortTermPlan {
   planTitle: string;
   specialistName: string; // ظافر ناصر الشهراني
   objectives: ShortTermObjective[];
+  communicationObjectives?: Partial<Record<CommunicationDiagnosis, string>>;
   clinicalMethodology: string;
   homeSupportRequirements: string;
 }
@@ -284,6 +288,7 @@ export interface HomeworkSheet {
     word: string;
     repetitionCount: number;
   }[];
+  communicationHomePractice?: Partial<Record<CommunicationDiagnosis, string>>;
   sentenceToRepeat: string;
   parentNotes: string;
   parentSignature: string;

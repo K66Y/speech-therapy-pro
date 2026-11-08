@@ -46,6 +46,9 @@ export const DailySessionView: React.FC<DailySessionViewProps> = ({
   const [newStudentResponse, setNewStudentResponse] = useState<any>('ممتاز ومتحمس');
   const [newHomework, setNewHomework] = useState('');
   const [newNotes, setNewNotes] = useState('');
+  const [selectedClinicalExercises, setSelectedClinicalExercises] = useState<string[]>([]);
+  const communicationGuides = (student.communicationDiagnoses || []).map(diagnosis => COMMUNICATION_THERAPY_GUIDES[diagnosis]);
+  const hasCommunicationDiagnosis = communicationGuides.length > 0;
 
   const handleCreateSession = () => {
     const newLog: DailySessionLog = {
@@ -55,29 +58,28 @@ export const DailySessionView: React.FC<DailySessionViewProps> = ({
       sessionDate: newSessionDate,
       sessionDuration: '30 دقيقة',
       targetLetter,
-      targetObjective: newObjective.trim() || `تدريب نطق حرف (${targetLetter}) مع المرآة`,
+      targetObjective: newObjective.trim() || (hasCommunicationDiagnosis ? communicationGuides.map(guide => guide.label).join(' + ') + ': هدف الجلسة وفق الخطة الأسبوعية' : `تدريب نطق حرف (${targetLetter}) مع المرآة`),
       toolsUsed: {
-        mirror: true,
-        tongueDepressor: true,
+        mirror: !hasCommunicationDiagnosis,
+        tongueDepressor: false,
         audioRecorder: false,
         visualFlashcards: true,
         rewardTokens: true
       },
-      mirrorProcedure: 'جلس الطالب أمام المرآة وضبط وضعية اللسان والشفاه قبل نطق كل كلمة.',
-      depressorProcedure: 'استخدم الخافض لتنبيه لثة الثنايا العليا وتثبيت جانبي اللسان.',
-      exercisesPerformed: [
-        'تمارين حركية للسان والشفاه.',
-        'تدريب أمام المرآة.',
-        'نطق الكلمات المصورة الواقعية.'
-      ],
+      mirrorProcedure: hasCommunicationDiagnosis ? 'لم تستخدم المرآة؛ ركزت الجلسة على مهارات التواصل واللغة المحددة في الخطة.' : 'جلس الطالب أمام المرآة وضبط وضعية اللسان والشفاه قبل نطق كل كلمة.',
+      depressorProcedure: 'لم يستخدم خافض اللسان في هذه الجلسة.',
+      exercisesPerformed: hasCommunicationDiagnosis
+        ? (selectedClinicalExercises.length ? selectedClinicalExercises : communicationGuides.map(guide => guide.methods[0]))
+        : ['تمارين حركية للسان والشفاه.', 'تدريب أمام المرآة.', 'نطق الكلمات المصورة الواقعية.'],
       studentResponse: newStudentResponse,
       accuracyRate: newAccuracy,
-      homeworkAssigned: newHomework.trim() || `التدريب على حرف (${targetLetter}) بالمنزل.`,
+      homeworkAssigned: newHomework.trim() || (hasCommunicationDiagnosis ? communicationGuides.map(guide => guide.homePractice).join('\n\n') : `التدريب على حرف (${targetLetter}) بالمنزل.`),
       specialistNotes: newNotes,
       specialistName: SCHOOL_KLICHE.specialistName
     };
 
     onAddSession(newLog);
+    setSelectedClinicalExercises([]);
     setShowAddForm(false);
   };
 
@@ -124,6 +126,20 @@ export const DailySessionView: React.FC<DailySessionViewProps> = ({
           <h3 className="font-black text-emerald-950 text-base">
             تسجيل جلسة نطقية علاجية جديدة
           </h3>
+          {hasCommunicationDiagnosis && <div className="space-y-4 rounded-2xl border border-sky-200 bg-sky-50 p-4">
+            <h4 className="font-black text-sky-950">طرق التدريب المرتبطة بتشخيص الطالب</h4>
+            {communicationGuides.map(guide => <article key={guide.label} className="rounded-xl border border-white bg-white p-4">
+              <h5 className="font-bold">{guide.label}</h5>
+              <ul className="mt-2 list-disc space-y-2 pr-5 text-xs leading-6">{guide.methods.map(method => <li key={method}>
+                <span>{method}</span>
+                <button type="button" onClick={() => setSelectedClinicalExercises(previous => previous.includes(method) ? previous : [...previous, method])} className="mr-2 rounded-lg bg-sky-100 px-2 py-1 font-bold text-sky-900 print:hidden">
+                  {selectedClinicalExercises.includes(method) ? 'أضيف للجلسة' : 'إضافة إلى الجلسة'}
+                </button>
+              </li>)}</ul>
+              <p className="mt-3 rounded-lg bg-amber-50 p-3 text-xs leading-6"><strong>تنسيق التنفس:</strong> {guide.breathing}</p>
+            </article>)}
+            <p className="text-xs leading-6 text-slate-600">ستُسجل الأنشطة المختارة في تقرير الجلسة. أزل أي طريقة لا تناسب نتيجة تقييم الطالب أو تفضيلاته.</p>
+          </div>}
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
             <div>
@@ -142,10 +158,10 @@ export const DailySessionView: React.FC<DailySessionViewProps> = ({
                 className="w-full bg-white border border-slate-200 rounded-lg p-2"
               />
             </div>
-            <div>
-              <label className="font-bold text-slate-700 block mb-1">حرف التدريب:</label>
-              <select value={targetLetter} onChange={e => setTargetLetter(e.target.value as typeof targetLetter)} className="w-full rounded-lg border border-slate-200 bg-white p-2">{ARABIC_LETTERS_LIST.map(letter => <option key={letter}>{letter}</option>)}</select>
-            </div>
+            {!hasCommunicationDiagnosis && <div>
+                            <label className="font-bold text-slate-700 block mb-1">حرف التدريب:</label>
+                            <select value={targetLetter} onChange={e => setTargetLetter(e.target.value as typeof targetLetter)} className="w-full rounded-lg border border-slate-200 bg-white p-2">{ARABIC_LETTERS_LIST.map(letter => <option key={letter}>{letter}</option>)}</select>
+                          </div>}
             <div>
               <label className="font-bold text-slate-700 block mb-1">نسبة الإتقان المحققة (%):</label>
               <SavedField aria-label="نسبة إتقان الجلسة"

@@ -10,7 +10,8 @@ import {
   Heart,
   Send
 } from 'lucide-react';
-import { HomeworkSheet, StudentProfile } from '../types/speechTherapy';
+import { HomeworkSheet, StudentProfile, CommunicationDiagnosis } from '../types/speechTherapy';
+import { COMMUNICATION_THERAPY_GUIDES } from '../data/communicationTherapyGuides';
 import { OfficialHeader } from './OfficialHeader';
 import { SCHOOL_KLICHE } from '../data/sampleData';
 import { triggerOfficialPrint } from '../services/printService';
@@ -177,7 +178,21 @@ export const HomeworkView: React.FC<HomeworkViewProps> = ({
           </div>
         </div>
 
-        {/* Practice Words Table with Stars / Repetition Checklist */}
+        {!!student.communicationDiagnoses?.length && <section className="mb-6 rounded-2xl border border-sky-200 bg-sky-50/60 p-5">
+          <h3 className="font-black text-sky-950">واجب التواصل والطلاقة المرتبط بتشخيص الطالب</h3>
+          <p className="mt-1 text-xs leading-6 text-slate-600">تظهر إرشادات الحالة المختارة، ويمكن تعديل نص الواجب قبل طباعته أو تصديره.</p>
+          {student.communicationDiagnoses.map((diagnosis: CommunicationDiagnosis) => {
+            const guide = COMMUNICATION_THERAPY_GUIDES[diagnosis];
+            return <label key={diagnosis} className="mt-3 block text-sm font-bold">{guide.label}
+              <SavedField multiline rows={4} aria-label={`واجب منزلي: ${guide.label}`} value={activeHw.communicationHomePractice?.[diagnosis] ?? guide.homePractice} onChange={event => updateHomework({
+                communicationHomePractice: { ...activeHw.communicationHomePractice, [diagnosis]: event.target.value }
+              })} className="mt-1 w-full rounded-xl border border-slate-200 bg-white p-3 font-normal leading-7" />
+            </label>;
+          })}
+          {student.communicationDiagnoses.map(diagnosis => <p key={diagnosis} className="mt-3 rounded-lg bg-white p-3 text-xs leading-6"><strong>طريقة تدريب مناسبة في الجلسة:</strong> {COMMUNICATION_THERAPY_GUIDES[diagnosis].methods[0]}</p>)}
+        </section>}
+
+                {/* Practice Words Table with Stars / Repetition Checklist */}
         <div className="mb-6">
           <h3 className="font-black text-slate-900 text-base mb-3">
             جدول متابعة تكرار الكلمات المستهدفة يومياً:

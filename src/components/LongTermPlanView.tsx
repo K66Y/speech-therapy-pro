@@ -12,6 +12,7 @@ import {
   Plus
 } from 'lucide-react';
 import { LongTermPlan, StudentProfile, ArabicLetterKey } from '../types/speechTherapy';
+import { COMMUNICATION_THERAPY_GUIDES } from '../data/communicationTherapyGuides';
 import { OfficialHeader } from './OfficialHeader';
 import { SCHOOL_KLICHE } from '../data/sampleData';
 import { triggerOfficialPrint } from '../services/printService';
@@ -120,6 +121,25 @@ export const LongTermPlanView: React.FC<LongTermPlanViewProps> = ({
             <label><span className="text-slate-500 block text-[11px]">مدة الخطة:</span><SavedField aria-label="مدة الخطة" value={data.goals[0]?.targetPeriod || ''} onChange={e => { const updated={...data,goals:data.goals.map(goal=>({...goal,targetPeriod:e.target.value}))}; setData(updated); onUpdatePlan(updated); }} className="w-full bg-transparent font-bold text-slate-800 print:border-0" /></label>
             <div><span className="text-slate-500 block text-[11px]">الحروف المستهدفة:</span><strong className="text-emerald-800">{data.goals.map(goal=>goal.targetLetter).join('، ')}</strong></div>
           </div>
+
+          {!!student.communicationDiagnoses?.length && <section className="mb-6 rounded-2xl border border-sky-200 bg-sky-50/50 p-5">
+            <h3 className="mb-3 text-base font-black text-sky-950">أهداف التواصل طويلة المدى</h3>
+            <p className="mb-3 text-xs leading-6 text-slate-600">تظهر هنا أهداف التأتأة أو الحبسة المحددة في التشخيص، مستقلة عن أهداف الحروف. راجع الهدف وفق خط الأساس واحتياج الطالب.</p>
+            {student.communicationDiagnoses.map(diagnosis => {
+              const guide = COMMUNICATION_THERAPY_GUIDES[diagnosis];
+              return <article key={diagnosis} className="mb-4 rounded-xl border border-white bg-white p-4">
+                <label className="block text-sm font-bold">{guide.label} · هدف طويل المدى
+                  <SavedField multiline rows={4} aria-label={`هدف طويل المدى: ${guide.label}`} value={data.communicationGoals?.[diagnosis] || guide.longTermGoal} onChange={event => {
+                    const updated = { ...data, communicationGoals: { ...data.communicationGoals, [diagnosis]: event.target.value } };
+                    setData(updated);
+                    onUpdatePlan(updated);
+                  }} className="mt-1 w-full rounded-xl border border-slate-200 p-3 font-normal leading-7" />
+                </label>
+                <ul className="mt-3 list-disc space-y-2 pr-5 text-xs leading-6 text-slate-700">{guide.methods.map(method => <li key={method}>{method}</li>)}</ul>
+                <p className="mt-3 rounded-lg bg-amber-50 p-3 text-xs leading-6"><strong>تنسيق التنفس:</strong> {guide.breathing}</p>
+              </article>;
+            })}
+          </section>}
 
           {/* Goals Table */}
           <div className="mb-6">
