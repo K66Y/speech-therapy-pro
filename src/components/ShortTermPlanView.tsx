@@ -15,6 +15,7 @@ import {
   Trash2
 } from 'lucide-react';
 import { ShortTermPlan, StudentProfile, ArabicLetterKey } from '../types/speechTherapy';
+import { COMMUNICATION_THERAPY_GUIDES } from '../data/communicationTherapyGuides';
 import { OfficialHeader } from './OfficialHeader';
 import { SCHOOL_KLICHE } from '../data/sampleData';
 import { triggerOfficialPrint } from '../services/printService';
@@ -170,7 +171,26 @@ export const ShortTermPlanView: React.FC<ShortTermPlanViewProps> = ({
             </label>
           </div>
 
-          {/* Stepped Objectives Table */}
+          {!!student.communicationDiagnoses?.length && <section className="mb-6 rounded-2xl border border-teal-200 bg-teal-50/50 p-5">
+            <h3 className="mb-3 text-base font-black text-teal-950">الأهداف الإجرائية للتأتأة والحبسة الكلامية</h3>
+            <p className="mb-3 text-xs leading-6 text-slate-600">تُحدد الأهداف بحسب التقييم الوظيفي، وتوثق الاستجابة ودرجة المساندة في الجلسات.</p>
+            {student.communicationDiagnoses.map(diagnosis => {
+              const guide = COMMUNICATION_THERAPY_GUIDES[diagnosis];
+              return <article key={diagnosis} className="mb-4 rounded-xl border border-white bg-white p-4">
+                <label className="block text-sm font-bold">{guide.label} · هدف قصير المدى
+                  <SavedField multiline rows={4} aria-label={`هدف قصير المدى: ${guide.label}`} value={data.communicationObjectives?.[diagnosis] || guide.shortTermGoal} onChange={event => {
+                    const updated = { ...data, communicationObjectives: { ...data.communicationObjectives, [diagnosis]: event.target.value } };
+                    setData(updated);
+                    onUpdatePlan(updated);
+                  }} className="mt-1 w-full rounded-xl border border-slate-200 p-3 font-normal leading-7" />
+                </label>
+                <ul className="mt-3 list-disc space-y-2 pr-5 text-xs leading-6">{guide.methods.map(method => <li key={method}>{method}</li>)}</ul>
+                <p className="mt-3 rounded-lg bg-amber-50 p-3 text-xs leading-6"><strong>تنسيق التنفس والكلام:</strong> {guide.breathing}</p>
+              </article>;
+            })}
+          </section>}
+
+                    {/* Stepped Objectives Table */}
           <div className="mb-6">
             <h3 className="text-base font-black text-slate-900 mb-3 flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-teal-600 inline-block"></span>
