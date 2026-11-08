@@ -57,6 +57,7 @@ export interface StudentWeeklyTherapySession {
 }
 
 export interface StudentWeeklyTherapyPlan {
+  diagnosisKey: string;
   weekOf: string;
   longTermGoal: string;
   shortTermGoals: string[];
