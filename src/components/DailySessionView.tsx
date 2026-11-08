@@ -48,7 +48,7 @@ export const DailySessionView: React.FC<DailySessionViewProps> = ({
   useEffect(() => { setTargetLetter(student.targetLetters?.[0] || sessions[0]?.targetLetter || 'ر'); setTrainingType(student.targetLetters?.length ? 'letters' : (student.communicationDiagnoses || [])[0] || 'letters'); }, [student.id]);
   const selectedDiagnosis: CommunicationDiagnosis | undefined = trainingType === 'stuttering' || trainingType === 'aphasia' ? trainingType : undefined;
   const selectedGuide = selectedDiagnosis ? COMMUNICATION_THERAPY_GUIDES[selectedDiagnosis] : undefined;
-  const activeLetterGoal = trainingType === 'letters' ? shortTermPlan.objectives.filter(goal => goal.status !== 'achieved').sort((a,b) => a.stepNumber-b.stepNumber)[0] : undefined;
+  const activeLetterGoal = trainingType === 'letters' ? shortTermPlan.objectives.filter(goal => goal.targetLetter === targetLetter && goal.status !== 'achieved').sort((a,b) => a.stepNumber-b.stepNumber)[0] : undefined;
   const activeCommunicationGoal = selectedDiagnosis ? (shortTermPlan.communicationObjectiveSteps || []).filter(goal => goal.diagnosis === selectedDiagnosis && goal.status !== 'achieved').sort((a,b) => a.stepNumber-b.stepNumber)[0] : undefined;
   const activeGoal = activeLetterGoal || activeCommunicationGoal;
   const goalId = activeGoal?.id;
@@ -72,8 +72,7 @@ export const DailySessionView: React.FC<DailySessionViewProps> = ({
       sessionDuration: '30 دقيقة',
       targetLetter,
       trainingType: trainingType || 'letters',
-      linkedGoalId: goalId,
-      linkedGoalType: goalType,
+      ...(goalId && goalType ? { linkedGoalId: goalId, linkedGoalType: goalType } : {}),
       goalCompleted: completeCurrentGoal,
       targetObjective: newObjective.trim() || activeGoal?.objectiveText || (selectedGuide ? selectedGuide.shortTermGoal : `تدريب نطق حرف (${targetLetter}) مع المرآة`),
       toolsUsed: {
@@ -124,7 +123,7 @@ export const DailySessionView: React.FC<DailySessionViewProps> = ({
 
         <div className="flex items-center gap-2">
           {trainingType === 'letters' && <label className="flex items-center gap-2 text-xs font-bold text-slate-700">حرف التدريب:
-            <select value={targetLetter} onChange={e => setTargetLetter(e.target.value as typeof targetLetter)} className="rounded-lg border border-slate-200 bg-white p-2">{ARABIC_LETTERS_LIST.map(letter => <option key={letter}>{letter}</option>)}</select>
+            <select value={targetLetter} onChange={e => setTargetLetter(e.target.value as typeof targetLetter)} className="rounded-lg border border-slate-200 bg-white p-2">{(student.targetLetters || []).map(letter => <option key={letter}>{letter}</option>)}</select>
           </label>}
           <button
             onClick={() => setShowAddForm(!showAddForm)}
@@ -191,7 +190,7 @@ export const DailySessionView: React.FC<DailySessionViewProps> = ({
             </div>
             {trainingType === 'letters' && <div>
                             <label className="font-bold text-slate-700 block mb-1">حرف التدريب:</label>
-                            <select value={targetLetter} onChange={e => setTargetLetter(e.target.value as typeof targetLetter)} className="w-full rounded-lg border border-slate-200 bg-white p-2">{ARABIC_LETTERS_LIST.map(letter => <option key={letter}>{letter}</option>)}</select>
+                            <select value={targetLetter} onChange={e => setTargetLetter(e.target.value as typeof targetLetter)} className="w-full rounded-lg border border-slate-200 bg-white p-2">{(student.targetLetters || []).map(letter => <option key={letter}>{letter}</option>)}</select>
                           </div>}
             <div>
               <label className="font-bold text-slate-700 block mb-1">نسبة الإتقان المحققة (%):</label>
@@ -284,7 +283,7 @@ export const DailySessionView: React.FC<DailySessionViewProps> = ({
                     <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-slate-500">
                       <div>التاريخ: <EditableText label="تاريخ الجلسة" value={formatHijriDate(s.sessionDate)} multiline={false} onSave={sessionDate => onUpdateSession({ ...s, sessionDate: formatHijriDate(sessionDate) })} /></div>
                       <div>المدة: {edit(s, 'sessionDuration', 'مدة الجلسة')}</div>
-                      <div>الحرف: <SavedSelect aria-label="حرف الجلسة" value={s.targetLetter} onChange={e => onUpdateSession({ ...s, targetLetter: e.target.value as typeof s.targetLetter })}>{ARABIC_LETTERS_LIST.map(letter => <option key={letter}>{letter}</option>)}</SavedSelect></div>
+                      {s.trainingType && s.trainingType !== 'letters' ? <strong>{COMMUNICATION_THERAPY_GUIDES[s.trainingType].label}</strong> : <div>الحرف: <SavedSelect aria-label="حرف الجلسة" value={s.targetLetter} onChange={e => onUpdateSession({ ...s, targetLetter: e.target.value as typeof s.targetLetter })}>{(student.targetLetters || []).map(letter => <option key={letter}>{letter}</option>)}</SavedSelect></div>}
                     </div>
                   </div>
                 </div>
@@ -299,8 +298,7 @@ export const DailySessionView: React.FC<DailySessionViewProps> = ({
                 </div>
               </div>
 
-              {/* Tools row (Mandatory 1- Mirror & 2- Tongue Depressor) */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+              {(!s.trainingType || s.trainingType === 'letters') && <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
                 <div className="bg-sky-50 p-3 rounded-xl border border-sky-200 flex items-start gap-2.5">
                   <Eye className="w-4 h-4 text-sky-700 shrink-0 mt-0.5" />
                   <div>
@@ -320,7 +318,7 @@ export const DailySessionView: React.FC<DailySessionViewProps> = ({
                     {edit(s, 'depressorProcedure', 'إجراء خافض اللسان')}
                   </div>
                 </div>
-              </div>
+              </div>}
 
               {/* Exercises Performed */}
               <div className="text-xs">
@@ -345,7 +343,7 @@ export const DailySessionView: React.FC<DailySessionViewProps> = ({
                     الواجب المنزلي المسند:
                   </span>
                   {edit(s, 'homeworkAssigned', 'الواجب المنزلي')}
-                  <ChoicePicker category={`session-homework-${s.targetLetter}`} label="الواجبات" suggestions={homeworkSuggestions(s.targetLetter)} onSelect={homeworkAssigned => onUpdateSession({ ...s, homeworkAssigned })} />
+                  <ChoicePicker category={`session-homework-${s.targetLetter}`} label="الواجبات" suggestions={s.trainingType && s.trainingType !== 'letters' ? [COMMUNICATION_THERAPY_GUIDES[s.trainingType].homePractice] : homeworkSuggestions(s.targetLetter)} onSelect={homeworkAssigned => onUpdateSession({ ...s, homeworkAssigned })} />
                 </div>
                 <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200">
                   <span className="font-bold text-slate-800 block mb-0.5">
