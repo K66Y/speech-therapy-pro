@@ -14,6 +14,7 @@ import { SPECIALIST_NAME, SCHOOL_KLICHE } from './sampleData';
 import { getLiveHijriDate } from '../services/dateService';
 import { parentTrainingGuide } from '../services/parentTrainingGuide';
 import { DEFAULT_DIAGNOSTIC_DOMAINS } from './diagnosticDomains';
+import { COMMUNICATION_THERAPY_GUIDES } from './communicationTherapyGuides';
 
 export function createNewStudentRecords(student: StudentProfile, targetLettersInput: ArabicLetterKey[] | ArabicLetterKey) {
   const targetLetters = Array.isArray(targetLettersInput) ? [...new Set(targetLettersInput)] : [targetLettersInput];
@@ -28,7 +29,7 @@ export function createNewStudentRecords(student: StudentProfile, targetLettersIn
     medicalHistory: 'تاريخ ولادي طبيعي دون مضاعفات، السمع سليم ولا توجد متلازمات وراثية أو أمراض مزمنة.',
     developmentHistory: 'تطور الحركات الكبرى طبيعي، تأخر طفيف في بداية نطق الكلمات والجمل في سن ما قبل المدرسة.',
     speechProblemOnsetDate: currentDate,
-    speechHistory: `صعوبة في نطق الأصوات المستهدفة (${targetLetters.join('، ')}) في مواضع الكلمة المختلفة مما يؤثر على الطلاقة اللغوية.`,
+    speechHistory: targetLetters.length ? `صعوبة في نطق الأصوات المستهدفة (${targetLetters.join('، ')}) في مواضع الكلمة المختلفة، وفق المعلومات الأولية المسجلة.` : (student.communicationDiagnoses || []).map(diagnosis => COMMUNICATION_THERAPY_GUIDES[diagnosis].label).join('، '),
     familyHistory: `الأسرة متعاونة جداً وتتابع مع المدرسة لتطبيق التمارين المنزلية اليومية.`,
     hearingStatus: 'تم إجراء فحص المسح السمعي المدرسي وكانت النتيجة سليمة تماماً للأذنين.',
     behaviorNotes: 'طالب متعاون وذكي ويستجيب للتعزيز الإيجابي والتغذية الراجعة البصرية.',
@@ -66,14 +67,11 @@ export function createNewStudentRecords(student: StudentProfile, targetLettersIn
       mirrorObservation: `تم تدريب الطالب على الوقوف أمام المرآة لملاحظة وضعية اللسان والشفاه بدقة عند نطق (${targetLetters.join('، ')}).`,
       tongueDepressorExam: `تم استخدام خافض اللسان الطبي المعقم لمساعدة الطالب على ضبط المخارج الصوتية للأحرف (${targetLetters.join('، ')}).`
     },
-    toolsUsed: ['1- مرآة نطق مكبرة وواضحة', '2- خافض لسان طبي معقم', 'بطاقات تشخيص الأصوات الواقعية'],
-    initialDiagnosis: `اضطراب نطق وظيفي في الأصوات المستهدفة (${targetLetters.join('، ')}) خالٍ من العيوب العضوية التشريحية.`,
-    recommendations: [
-      `الالتحاق بجلسات تدريبات النطق بمعدل جلستين أسبوعياً للتركيز على الأصوات (${targetLetters.join('، ')}).`,
-      `استخدام المرآة لتوفير التغذية الراجعة البصرية أثناء إنتاج الأصوات.`,
-      `استخدام خافض اللسان المعقم لتحديد نقاط التلامس الصحيحة في تجويف الفم.`,
-      `إشراك الأسرة في متابعة وتطبيق أوراق الواجبات المنزلية.`
-    ]
+    toolsUsed: targetLetters.length ? ['مرآة نطق', 'بطاقات تشخيص الأصوات المستهدفة'] : [],
+    initialDiagnosis: targetLetters.length ? `توجد صعوبة أولية مسجلة في أصوات (${targetLetters.join('، ')}). يلزم استكمال الفحص النطقي والعضوي قبل اعتماد تشخيص نهائي.` : 'لم يُعتمد تشخيص نطقي نهائي عند التسجيل؛ استكمل تقييم مسارات التواصل المحددة في ملف الطالب.',
+    recommendations: targetLetters.length
+      ? [`استكمال تقييم الأصوات المستهدفة (${targetLetters.join('، ')}) قبل تحديد الجرعة العلاجية.`, 'اختيار أهداف تدريبية قابلة للقياس بحسب خط الأساس.', 'إشراك الأسرة في متابعة الواجب المناسب للمسار المحدد.']
+      : (student.communicationDiagnoses || []).map(diagnosis => COMMUNICATION_THERAPY_GUIDES[diagnosis].assessment)
   };
 
   // 2. نتائج التشخيص المبدئي
@@ -105,14 +103,14 @@ export function createNewStudentRecords(student: StudentProfile, targetLettersIn
     studentId: student.id,
     assessmentDate: currentDate,
     specialistName: SPECIALIST_NAME,
-    toolsUsed: ['1- مرآة تدريبات النطق', '2- خافض لسان طبي معقم', 'بطاقات تشخيص الحروف الـ 28'],
+    toolsUsed: targetLetters.length ? ['مرآة تدريبات النطق', 'بطاقات تشخيص الحروف المستهدفة'] : [],
     lettersResults,
     speechIntelligibilityScore: 88,
-    primaryErrors: targetLetters.map(letter => `اضطراب نطق صوت حرف (${letter}) في أول ووسط وآخر الكلمة`),
-    summaryConclusion: `أظهر التقييم التشخيصي وجود اضطراب نطق في الأصوات المستهدفة (${targetLetters.join('، ')}) بنسبة وضوح كلام إجمالية بلغت 88%. التوصية: خطة علاجية مخصصة باستخدام المرآة وخافض اللسان.`,
+    primaryErrors: targetLetters.map(letter => `يحتاج الحرف (${letter}) إلى تقييم في مواضع الكلمة المختلفة.`),
+    summaryConclusion: 'لم يُستكمل التقييم بعد. تُدخل النتائج لكل مجال قبل اعتماد التشخيص والتوصية.',
     extendedAssessments: structuredClone(DEFAULT_DIAGNOSTIC_DOMAINS),
     recommendationDecision: 'needs_training',
-    recommendationText: 'تدريب الصوت المستهدف بالتدرج من نطق الصوت بشكل مفرد إلى المقاطع ثم الكلمات والجمل والتواصل، وفق الأداء المسجل.'
+    recommendationText: ''
   };
 
   // 3. الخطة طويلة المدى
@@ -122,7 +120,7 @@ export function createNewStudentRecords(student: StudentProfile, targetLettersIn
     academicYear: '1447 هـ',
     semester: 'الفصل الدراسي الأول',
     specialistName: SPECIALIST_NAME,
-    goals: [
+    goals: targetLetters.length ? [
       {
         id: `ltg-${student.id}-1`,
         code: 'هدف عام 1',
@@ -136,7 +134,11 @@ export function createNewStudentRecords(student: StudentProfile, targetLettersIn
         evaluationMethod: 'قوائم رصد الأداء الصوتي والنطقي والملاحظة المباشرة.',
     progressPercentage: 50
       }
-    ],
+    ] : [],
+    communicationGoals: {
+      ...(student.communicationDiagnoses?.includes('stuttering') ? { stuttering: COMMUNICATION_THERAPY_GUIDES.stuttering.longTermGoal } : {}),
+      ...(student.communicationDiagnoses?.includes('aphasia') ? { aphasia: COMMUNICATION_THERAPY_GUIDES.aphasia.longTermGoal } : {})
+    },
     generalStrategies: [
       'استخدام التغذية الراجعة البصرية بالمرآة في كل جلسة.',
       'التوجيه الحسي العضلي بواسطة خافض اللسان الطبي المعقم.',
@@ -154,11 +156,11 @@ export function createNewStudentRecords(student: StudentProfile, targetLettersIn
     longTermGoalRef: 'هدف عام 1',
     targetLetter,
     targetLetters,
-    planTitle: `الخطة التدريبية قصيرة المدى لمعالجة نطق حرف (${targetLetter})`,
+    planTitle: targetLetters.length ? `الخطة التدريبية قصيرة المدى لمعالجة نطق الحروف (${targetLetters.join('، ')})` : 'الخطة التدريبية قصيرة المدى لمهارات التواصل',
     specialistName: SPECIALIST_NAME,
     clinicalMethodology: 'استراتيجية النمذجة البصرية والحسية والتدريب الهرمي المتدرج.',
     homeSupportRequirements: 'ممارسة ورقة العمل المنزلية اليومية لمدة 10 دقائق أمام مرآة المنزل.',
-    objectives: [
+    objectives: targetLetters.length ? [
       {
         id: `sto-${student.id}-1`,
         stepNumber: 1,
@@ -191,7 +193,16 @@ export function createNewStudentRecords(student: StudentProfile, targetLettersIn
         status: 'in_progress',
         notes: 'قيد التدريب في الجلسات القادمة.'
       }
-    ]
+    ] : [],
+    communicationObjectives: {
+      ...(student.communicationDiagnoses?.includes('stuttering') ? { stuttering: COMMUNICATION_THERAPY_GUIDES.stuttering.shortTermGoal } : {}),
+      ...(student.communicationDiagnoses?.includes('aphasia') ? { aphasia: COMMUNICATION_THERAPY_GUIDES.aphasia.shortTermGoal } : {})
+    },
+    communicationObjectiveSteps: (student.communicationDiagnoses || []).flatMap(diagnosis => [
+      { id: `cto-${student.id}-${diagnosis}-1`, diagnosis, stepNumber: 1, objectiveText: `${COMMUNICATION_THERAPY_GUIDES[diagnosis].shortTermGoal} المرحلة الأولى: تدريب موجّه مع نموذج ومساندة مناسبة.`, status: 'in_progress' as const, currentPercentage: 0, successTargetPercentage: 80 },
+      { id: `cto-${student.id}-${diagnosis}-2`, diagnosis, stepNumber: 2, objectiveText: `${COMMUNICATION_THERAPY_GUIDES[diagnosis].shortTermGoal} المرحلة الثانية: تطبيق المهارة مع تقليل التلميح.`, status: 'pending' as const, currentPercentage: 0, successTargetPercentage: 85 },
+      { id: `cto-${student.id}-${diagnosis}-3`, diagnosis, stepNumber: 3, objectiveText: `${COMMUNICATION_THERAPY_GUIDES[diagnosis].shortTermGoal} المرحلة الثالثة: تعميم المهارة في موقف يومي وظيفي.`, status: 'pending' as const, currentPercentage: 0, successTargetPercentage: 90 }
+    ])
   };
 
   const progression: { level: string; objective: string; target: number }[] = [
@@ -229,46 +240,8 @@ export function createNewStudentRecords(student: StudentProfile, targetLettersIn
     finalExpectedOutcome: `القدرة على نطق حرف (${letter}) بدقة في الكلمات والجمل والمحادثة اليومية.`
   }));
 
-  // 5. سجل الجلسات
-  const sessions: DailySessionLog[] = [
-    {
-      id: `ses-${student.id}-1`,
-      studentId: student.id,
-      sessionNumber: 1,
-      sessionDate: currentDate,
-      sessionDuration: '30 دقيقة',
-      targetLetter,
-      targetObjective: `التهيئة وبناء الألفة والتدريب على مخرج صوت (${targetLetter}) منفرداً بمساعدة المرآة والخافض`,
-      toolsUsed: {
-        mirror: true,
-        tongueDepressor: true,
-        audioRecorder: false,
-        visualFlashcards: true,
-        rewardTokens: true
-      },
-      mirrorProcedure: 'جلس الطالب أمام المرآة وضبط وضعية اللسان والشفاه قبل نطق الصوت.',
-      depressorProcedure: 'استخدم الخافض المعقم لتنبيه لثة الثنايا العليا وتثبيت موضع اللسان.',
-      exercisesPerformed: [
-        'تمارين حركية لعضلات اللسان والشفاه.',
-        'تدريب بصري حركي أمام المرآة.',
-        `نطق المقاطع الصوتية لحرف (${targetLetter}).`
-      ],
-      studentResponse: 'ممتاز ومتحمس',
-      accuracyRate: 85,
-      homeworkAssigned: `التدريب أمام مرآة المنزل على نطق صوت (${targetLetter}) 10 مرات يومياً.`,
-      specialistNotes: 'استجابة سريعة وتفاعل إيجابي مع التوجيه بالمرآة.',
-      specialistName: SPECIALIST_NAME
-    }
-  ];
-  sessions.splice(0, sessions.length, ...targetLetters.map((letter, index) => ({
-    ...sessions[0],
-    id: `ses-${student.id}-${letter}`,
-    sessionNumber: index + 1,
-    targetLetter: letter,
-    targetObjective: `التهيئة وبناء الألفة والتدريب على مخرج صوت (${letter}) منفرداً بمساعدة المرآة والخافض`,
-    exercisesPerformed: ['تمارين حركية للسان والشفاه.', 'تدريب أمام المرآة.', `نطق المقاطع الصوتية لحرف (${letter}).`],
-    homeworkAssigned: `التدريب أمام مرآة المنزل على نطق صوت (${letter}) 10 مرات يومياً.`
-  })));
+  // لا نسجل جلسات افتراضية كأنها حدثت؛ يبدأ السجل فارغًا لكل طالب.
+  const sessions: DailySessionLog[] = [];
 
   // 6. ورقة الواجبات
   const homework: HomeworkSheet[] = [
@@ -318,27 +291,17 @@ export function createNewStudentRecords(student: StudentProfile, targetLettersIn
     reportDate: currentDate,
     specialistName: SPECIALIST_NAME,
     trainingPeriod: 'الفصل الدراسي الأول (جلسات مكثفة)',
-    initialStateSummary: `بدأ الطالب البرنامج بنسبة وضوح 88% مع صعوبة في نطق صوت حرف (${targetLetter}) في مواضع الكلمة المختلفة.`,
-    finalStateSummary: `تحسن ملحوظ جداً في مخارج الأصوات، وتمكن الطالب من نطق صوت (${targetLetter}) في الكلمات والجمل بدقة 95%.`,
-    letterProgression: [
-      {
-        letter: targetLetter,
-        beforeRate: 0,
-        afterRate: 95,
-        status: 'تم التصحيح والتعميم'
-      }
-    ],
-    speechIntelligibilityFinal: 95,
+    initialStateSummary: targetLetters.length ? `لم تُسجل نتائج خط أساس بعد للحروف: ${targetLetters.join('، ')}.` : 'لم تُسجل نتائج خط أساس بعد؛ تُحدد بعد التقييم الأولي.',
+    finalStateSummary: 'يُستكمل هذا الملخص بعد تنفيذ الجلسات وتسجيل نتائج التقييم اللاحق.',
+    letterProgression: [],
+    speechIntelligibilityFinal: 0,
     toolsEffectiveness: {
-      mirrorEffectiveness: 'ساعدت المرآة الطالب على تصحيح الخطأ ذاتياً ومطابقة وضعية المخرج النطقي.',
-      tongueDepressorEffectiveness: 'ساهم خافض اللسان في ضبط الارتكاز وتثبيت حركة اللسان بدقة.'
+      mirrorEffectiveness: '',
+      tongueDepressorEffectiveness: ''
     },
-    recommendationsForNextStage: [
-      'الاستمرار في القراءة الجهرية والمشاركة في الإذاعة المدرسية.',
-      'متابعة دورية كل شهر للاطمئنان على استقرار وتثبيت الصوت في المحادثة اليومية.'
-    ],
-    headOfSpecialEducationApproval: 'معتمد وفق المعايير الإكلينيكية المعتمدة',
-    schoolPrincipal: 'معتمد'
+    recommendationsForNextStage: ['تُحدد التوصيات بعد مراجعة نتائج التقييم النهائي ومقارنة خط الأساس.'],
+    headOfSpecialEducationApproval: '',
+    schoolPrincipal: ''
   };
 
   return {
