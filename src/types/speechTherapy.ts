@@ -45,6 +45,25 @@ export interface LetterInfo {
   practiceSentences: string[];
 }
 
+export interface StudentWeeklyTherapySession {
+  id: string;
+  day: 'الأحد' | 'الاثنين' | 'الثلاثاء' | 'الأربعاء' | 'الخميس';
+  sessionNumber: 1 | 2 | 3;
+  focus: string;
+  activities: string;
+  breathingPractice: string;
+  homePractice: string;
+  status: 'مجدولة' | 'منفذة' | 'مؤجلة';
+}
+
+export interface StudentWeeklyTherapyPlan {
+  diagnosisKey: string;
+  weekOf: string;
+  longTermGoal: string;
+  shortTermGoals: string[];
+  sessions: StudentWeeklyTherapySession[];
+}
+
 export interface StudentProfile {
   deletedAt?: string | null;
   id: string;
@@ -61,6 +80,8 @@ export interface StudentProfile {
   diagnosisCategory: string; // لدغة رائية، لدغة سينية، حذف أصوات، إبدال كاف بتاء...
   diagnosisCategories?: string[];
   targetLetters?: ArabicLetterKey[];
+  communicationDiagnoses?: Array<'stuttering' | 'aphasia'>;
+  weeklyTherapyPlan?: StudentWeeklyTherapyPlan;
   status: 'active' | 'graduated' | 'under_evaluation';
 }
 
@@ -165,6 +186,7 @@ export interface DiagnosticDomains {
   expressiveLanguage: DiagnosticDomainAssessment;
   vocabulary: DiagnosticDomainAssessment;
   eyeContact: DiagnosticDomainAssessment;
+  aphasia: DiagnosticDomainAssessment;
 }
 
 export interface LongTermPlanGoal {

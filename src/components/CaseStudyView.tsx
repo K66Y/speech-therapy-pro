@@ -188,6 +188,26 @@ export const CaseStudyView: React.FC<CaseStudyViewProps> = ({
         <div className="mb-6 grid gap-4 rounded-xl border border-slate-200 p-4 text-xs md:grid-cols-2">
           <div><h4 className="mb-2 font-bold">الاضطرابات النطقية</h4><EditableText label="الاضطرابات النطقية" value={(std.diagnosisCategories || [std.diagnosisCategory]).filter(Boolean).join('، ')} suggestions={['إبدال','حذف','تشويه','إضافة','إبدال، تشويه','إبدال، حذف']} onSave={value => { const categories = value.split(/[،,\n]/).map(item => item.trim()).filter(Boolean); const updated = linkCaseStudyClinicalFields(data, std.targetLetters || [], categories); setData(updated); onUpdateCaseStudy(updated); }} /></div>
           <div><h4 className="mb-2 font-bold">الحروف المستهدفة</h4><TargetLettersEditor value={std.targetLetters || []} onSave={targetLetters => { const updated = linkCaseStudyClinicalFields(data, targetLetters); setData(updated); onUpdateCaseStudy(updated); }} /></div>
+          <div className="md:col-span-2 border-t border-slate-200 pt-3">
+            <h4 className="mb-2 font-bold">اضطرابات التواصل والطلاقة</h4>
+            <p className="mb-2 text-slate-600">حدد ما تم تقييمه أو تشخيصه من المختص؛ هذا الاختيار مستقل عن قائمة الحروف، وتظهر خطته في الجدول الأسبوعي للطالب.</p>
+            <div className="flex flex-wrap gap-5">
+              {([{ key: 'stuttering', label: 'التأتأة / اضطراب الطلاقة' }, { key: 'aphasia', label: 'الحبسة الكلامية' }] as const).map(item => {
+                const selected = std.communicationDiagnoses || [];
+                return <label key={item.key} className="flex items-center gap-2 rounded-lg border bg-white px-3 py-2">
+                  <input type="checkbox" checked={selected.includes(item.key)} onChange={event => {
+                    const communicationDiagnoses = event.target.checked
+                      ? [...selected, item.key]
+                      : selected.filter(value => value !== item.key);
+                    const updated = { ...data, student: { ...std, communicationDiagnoses } };
+                    setData(updated);
+                    onUpdateCaseStudy(updated);
+                  }} />
+                  {item.label}
+                </label>;
+              })}
+            </div>
+          </div>
         </div>
         {/* Section 2: Clinical Developmental History */}
         <div className="mb-8">
