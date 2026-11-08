@@ -121,6 +121,7 @@ export const DiagnosisView: React.FC<DiagnosisViewProps> = ({
   ) => {
     commitAssessment({
       ...data,
+      summaryNeedsReview: true,
       extendedAssessments: {
         ...domains,
         [key]: { ...domains[key], ...changes }
@@ -321,7 +322,7 @@ export const DiagnosisView: React.FC<DiagnosisViewProps> = ({
     }).join(' | '));
     const recommendation = recommendationFor(data);
     sections.push(`التوصية المختارة: ${recommendation.decision === 'needs_training' ? 'يوصى بتدريب' : 'لا يحتاج إلى تدريب حاليًا'}؛ ${recommendation.text}`);
-    commitAssessment({ ...data, summaryConclusion: sections.join('\\n\\n'), summaryNeedsReview: false });
+    commitAssessment({ ...data, summaryConclusion: sections.join('\n\n'), summaryNeedsReview: false });
     setGeneratedNotice(true);
     setTimeout(() => setGeneratedNotice(false), 3000);
   };
@@ -820,6 +821,7 @@ export const DiagnosisView: React.FC<DiagnosisViewProps> = ({
                     ? [...previous, diagnosis]
                     : previous.filter(item => item !== diagnosis);
                   onUpdateStudent({ ...student, communicationDiagnoses });
+                  commitAssessment({ ...data, summaryNeedsReview: true });
                 }} />
                 {COMMUNICATION_THERAPY_GUIDES[diagnosis].label}
               </label>
