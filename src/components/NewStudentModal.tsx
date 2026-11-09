@@ -6,6 +6,7 @@ import { getLiveHijriDate } from '../services/dateService';
 import { UserPlus, X, Check, AlertCircle } from 'lucide-react';
 
 interface NewStudentModalProps {
+  initial?: StudentProfile;
   isOpen: boolean;
   onClose: () => void;
   onAddStudent: (newStudent: StudentProfile, initialTargetLetters: ArabicLetterKey[]) => void;
@@ -14,18 +15,21 @@ interface NewStudentModalProps {
 export const NewStudentModal: React.FC<NewStudentModalProps> = ({
   isOpen,
   onClose,
-  onAddStudent
+  onAddStudent, initial
 }) => {
-  const [fullName, setFullName] = useState('');
-  const [nationalId, setNationalId] = useState('');
-  const [grade, setGrade] = useState('الصف الأول الابتدائي');
-  const [classRoom, setClassRoom] = useState('فصل (أ)');
-  const [age, setAge] = useState('6–7 سنوات (تقديري)');
-  const [guardianName, setGuardianName] = useState('');
-  const [diagnosisCategories, setDiagnosisCategories] = useState<string[]>([]);
-  const [customDiagnosis, setCustomDiagnosis] = useState('');
-  const [targetLetters, setTargetLetters] = useState<ArabicLetterKey[]>([]);
-  const [communicationDiagnoses, setCommunicationDiagnoses] = useState<CommunicationDiagnosis[]>([]);
+  const [fullName, setFullName] = useState(initial?.fullName ?? '');
+  const [nationalId, setNationalId] = useState(initial?.nationalId ?? '');
+  const [grade, setGrade] = useState(initial?.grade ?? 'الصف الأول الابتدائي');
+  const [classRoom, setClassRoom] = useState(initial?.classRoom ?? 'فصل (أ)');
+  const [age, setAge] = useState(initial?.age ?? '6–7 سنوات (تقديري)');
+  const [guardianName, setGuardianName] = useState(initial?.guardianName ?? '');
+  const types = ['إبدال','حذف','تشويه','إضافة','اضطراب متعدد الأصوات','أخرى'];
+  const prior = initial?.diagnosisCategories || [];
+  const previousTypes = prior.map(c=>c.replace(/\s*حرف\s*\(.*?\)/g,'').trim()).filter(Boolean);
+  const [diagnosisCategories, setDiagnosisCategories] = useState<string[]>(types.filter(type=>previousTypes.includes(type)));
+  const [customDiagnosis, setCustomDiagnosis] = useState(previousTypes.filter(type=>!types.includes(type)).join('، '));
+  const [targetLetters, setTargetLetters] = useState<ArabicLetterKey[]>(initial?.targetLetters || []);
+  const [communicationDiagnoses, setCommunicationDiagnoses] = useState<CommunicationDiagnosis[]>(initial?.communicationDiagnoses || []);
   const toggleCommunicationDiagnosis = (d: CommunicationDiagnosis) => setCommunicationDiagnoses(prev => prev.includes(d) ? prev.filter(item => item !== d) : [...prev,d]);
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -64,8 +68,12 @@ export const NewStudentModal: React.FC<NewStudentModalProps> = ({
       return;
     }
 
-    const newId = `std-${Date.now()}`;
+    const chosen = [...diagnosisCategories,...customDiagnosis.split('،').map(v=>v.trim())].filter(Boolean);
+    const unchanged = chosen.length === new Set(previousTypes).size && chosen.every(type=>previousTypes.includes(type));
+    const categories = unchanged ? prior : chosen;
+    const newId = initial?.id || `std-${Date.now()}`;
     const newStudent: StudentProfile = {
+      ...initial,
       id: newId,
       fullName: fullName.trim(),
       nationalId: nationalId.trim(),
@@ -73,13 +81,13 @@ export const NewStudentModal: React.FC<NewStudentModalProps> = ({
       grade: grade.trim(),
       classRoom: classRoom.trim(),
       guardianName: guardianName.trim() || `ولي أمر الطالب ${fullName.trim()}`,
-      referralDate: getLiveHijriDate(),
-      specialistName: SPECIALIST_NAME,
-      diagnosisCategory: [...diagnosisCategories, customDiagnosis.trim()].filter(Boolean).join('، '),
-      diagnosisCategories: [...diagnosisCategories, customDiagnosis.trim()].filter(Boolean),
+      referralDate: initial?.referralDate || getLiveHijriDate(),
+      specialistName: initial?.specialistName || SPECIALIST_NAME,
+      diagnosisCategory: categories.join('، '),
+      diagnosisCategories: categories,
       targetLetters,
       communicationDiagnoses,
-      status: 'active'
+      status: initial?.status || 'active'
     };
 
     onAddStudent(newStudent, targetLetters);
@@ -96,7 +104,7 @@ export const NewStudentModal: React.FC<NewStudentModalProps> = ({
               <UserPlus className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-base font-black">تسجيل ملف طالب جديد في برنامج التخاطب</h3>
+              <h3 className="text-base font-black">{initial ? 'تعديل ملف الطالب والتشخيص' : 'تسجيل ملف طالب جديد في برنامج التخاطب'}</h3>
               <p className="text-xs text-sky-200">
                 إضافة بيانات الطالب واعتماد الخطة التشخيصية والتأهيلية المعتمدة
               </p>
@@ -187,7 +195,7 @@ export const NewStudentModal: React.FC<NewStudentModalProps> = ({
 
             <div>
               <label className="font-bold text-slate-700 block mb-1">العمر الزمني</label>
-              <input type="text" value={age} readOnly className="w-full p-2.5 bg-slate-100 border border-slate-200 rounded-xl text-slate-600" />
+              <input type="text" value={age} onChange={e=>setAge(e.target.value)} className="w-full p-2.5 bg-slate-100 border border-slate-200 rounded-xl text-slate-600" />
             </div>
           </div>
 
@@ -228,7 +236,7 @@ export const NewStudentModal: React.FC<NewStudentModalProps> = ({
                     <button type="button" key={letter} onClick={() => toggleTargetLetter(letter)} className={`rounded-md border p-1.5 font-black ${targetLetters.includes(letter) ? 'bg-sky-800 text-white border-sky-900' : 'bg-slate-50 text-slate-700 border-slate-200'}`}>{letter}</button>
                   ))}
                 </div>
-                <p className="mt-1 text-[11px] text-slate-500">المحدد: {targetLetters.length ? targetLetters.join('، ') : 'لا توجد حروف مستهدفة'}</p>
+                <button type="button" onClick={()=>setTargetLetters([])} className="mt-2 text-sky-800">إلغاء تحديد جميع الحروف</button><p className="mt-1 text-[11px] text-slate-500">المحدد: {targetLetters.length ? targetLetters.join('، ') : 'لا توجد حروف مستهدفة'}</p>
               </div>
             </div>
             <fieldset className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50/60 p-3">
@@ -258,7 +266,7 @@ export const NewStudentModal: React.FC<NewStudentModalProps> = ({
               className="px-5 py-2.5 rounded-xl bg-sky-700 hover:bg-sky-800 text-white font-bold shadow-md transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer"
             >
               <Check className="w-4 h-4" />
-              حفظ وتسجيل ملف الطالب
+              {initial ? 'حفظ تعديلات الطالب وفتح التقييم' : 'حفظ وتسجيل ملف الطالب'}
             </button>
           </div>
         </form>

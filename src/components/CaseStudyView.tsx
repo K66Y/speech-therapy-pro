@@ -434,7 +434,7 @@ export const CaseStudyView: React.FC<CaseStudyViewProps> = ({
             </h4>
             <SavedField
               type="text"
-              aria-label="التشخيص الأولي" value={data.initialDiagnosis}
+              suggestions={["لوحظ وجود تأتأة توثّق وجود مشكلة تؤثر على الطلاقة وأثرها في المشاركة وتحدد الشدة في التقييم."]} aria-label="التشخيص الأولي" value={data.initialDiagnosis}
               onChange={e => { const updated = { ...data, initialDiagnosis: e.target.value }; setData(updated); onUpdateCaseStudy(updated); }}
               className="w-full bg-white border border-emerald-300 rounded-xl p-2.5 font-bold text-slate-900 text-sm"
             />

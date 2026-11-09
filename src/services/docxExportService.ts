@@ -1,3 +1,4 @@
+import { stutteringStages } from '../data/stutteringStages';
 import { homeworkColumns, homeworkPositions } from './homeworkGrid';
 import { parentTrainingGuide, shouldUpgradeParentTrainingGuide } from './parentTrainingGuide';
 import {
@@ -598,7 +599,7 @@ export async function exportPlansDocx(
           createStyledCell('الحالة', 15, true)
         ]
       }),
-      ...longTermPlan.goals.map(
+      ...longTermPlan.goals.filter(goal => (student.targetLetters || []).includes(goal.targetLetter)).map(
         g =>
           new TableRow({
             children: [
@@ -617,7 +618,8 @@ export async function exportPlansDocx(
         const guide = COMMUNICATION_THERAPY_GUIDES[diagnosis];
         return [
           new Paragraph({ alignment: AlignmentType.RIGHT, bidirectional: true, spacing: { before: 80, after: 40 }, children: [new TextRun({ text: guide.label, font: 'Cairo', bold: true, color: PRIMARY_COLOR, rightToLeft: true })] }),
-          new Paragraph({ alignment: AlignmentType.RIGHT, bidirectional: true, spacing: { after: 80 }, children: [new TextRun({ text: longTermPlan.communicationGoals?.[diagnosis] || guide.longTermGoal, font: 'Cairo', rightToLeft: true })] })
+          new Paragraph({ alignment: AlignmentType.RIGHT, bidirectional: true, spacing: { after: 80 }, children: [new TextRun({ text: longTermPlan.communicationGoals?.[diagnosis] || guide.longTermGoal, font: 'Cairo', rightToLeft: true })] }),
+          ...(diagnosis === 'stuttering' ? (longTermPlan.stutteringStages || stutteringStages).flatMap(stage=>[stage.title,stage.time,'الهدف: '+stage.goal,...stage.activities].map(text=>new Paragraph({alignment:AlignmentType.RIGHT,bidirectional:true,children:[new TextRun({text,font:'Cairo',rightToLeft:true,bold:text===stage.title})]}))) : [])
         ];
       })
     ] : []),

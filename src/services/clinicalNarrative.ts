@@ -41,9 +41,12 @@ export function assessmentNarrative(student: StudentProfile, data: DiagnosticAss
 export function linkFluencyPlan(plan: LongTermPlan, student: StudentProfile, data: DiagnosticAssessment): LongTermPlan {
   if (!student.communicationDiagnoses?.includes('stuttering')) return plan;
   const level = data.fluencySeverity;
-  const key = level || 'لم تحدد';
+  const key = 'مراحل التأتأة:' + (level || 'لم تحدد');
   if (plan.fluencyPlanKey === key) return plan;
-  const [goal,strategy] = level ? programmes[level] : [COMMUNICATION_THERAPY_GUIDES.stuttering.longTermGoal,'تُجمع عينة حوار وسرد وتوثّق أولويات الطالب قبل تحديد مستوى المساعدة ومعيار الإنجاز.'];
+  const [previousGoal,strategy] = level ? programmes[level] : [COMMUNICATION_THERAPY_GUIDES.stuttering.longTermGoal,'تُجمع عينة حوار وسرد وتوثّق أولويات الطالب قبل تحديد مستوى المساعدة ومعيار الإنجاز.'];
+  const savedGoal = plan.communicationGoals?.stuttering;
+  const wasGenerated = !savedGoal || savedGoal === previousGoal || savedGoal === COMMUNICATION_THERAPY_GUIDES.stuttering.longTermGoal || Object.values(programmes).some(([goal]) => savedGoal === goal) || savedGoal.startsWith('خلال مدة الخطة، يتعرف الطالب');
+  const goal = wasGenerated ? 'خلال مدة الخطة، يتعرف الطالب على لحظة التأتأة، ويختار طريقة تخفف الجهد أو التجنب، ثم يستخدمها في مواقف تواصل يحددها مع الأخصائي. يُقارن مستوى الراحة والمشاركة ودرجة المساندة بخط الأساس في نهاية كل مرحلة.' : savedGoal;
   const strategies = [strategy,'يسجل الأخصائي عدد فرص المشاركة والمحاولات المستقلة ودرجة المساندة، ويقارنها بخط الأساس في الصف والمنزل.'];
   if (student.targetLetters?.length) strategies.push(...plan.generalStrategies.filter(x=>!Object.values(programmes).some(p=>p[1]===x) && !strategies.includes(x)));
   return {...plan,fluencyPlanKey:key,communicationGoals:{...plan.communicationGoals,stuttering:goal},generalStrategies:strategies};

@@ -140,6 +140,7 @@ function WorkspaceApp({ user }: { user: User | null }) {
   const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [editingProfile,setEditingProfile] = useState(false);
   const [isNewStudentModalOpen, setIsNewStudentModalOpen] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
   const [syncStatus, setSyncStatus] = useState<'loading' | 'saving' | 'saved' | 'error'>('loading');
@@ -256,9 +257,7 @@ function WorkspaceApp({ user }: { user: User | null }) {
   const currentHwList = homeworkList[activeStudentId] || fallbackRecords.homework;
   const currentFinalReport = finalReports[activeStudentId] || fallbackRecords.finalReport;
   const diagnosedTargetLetters = getDiagnosedTargetLetters(currentAssessment);
-  const clinicalTargetLetters = diagnosedTargetLetters.length
-    ? diagnosedTargetLetters
-    : (currentStudent?.targetLetters || []);
+  const clinicalTargetLetters = currentStudent.targetLetters ?? diagnosedTargetLetters;
   const clinicalTargetsKey = clinicalTargetLetters.join('|');
   const clinicalTargets = new Set(clinicalTargetLetters);
   const linkedCurrentLTPlan = clinicalTargetLetters.length
@@ -363,6 +362,18 @@ function WorkspaceApp({ user }: { user: User | null }) {
   if (!isHydrated && syncStatus !== 'error') return <div dir="rtl" className="min-h-screen bg-slate-950 text-white grid place-items-center font-bold">جارٍ تحميل سجلاتك المحفوظة...</div>;
 
   // Handle adding a new student
+  const saveStudentProfile = (updated: StudentProfile, letters: ArabicLetterKey[]) => {
+    const updatedProfile = {...updated, targetLetters: letters};
+    const targetsChanged = !sameLetters(currentStudent.targetLetters,letters);
+    const categoriesChanged = JSON.stringify(updated.diagnosisCategories) !== JSON.stringify(currentStudent.diagnosisCategories);
+    const tracksChanged = JSON.stringify(updated.communicationDiagnoses) !== JSON.stringify(currentStudent.communicationDiagnoses);
+    const study = {...currentCaseStudy, student:updatedProfile};
+    const linked = targetsChanged || categoriesChanged || tracksChanged ? linkCaseStudyClinicalFields(study, letters,updatedProfile.diagnosisCategories) : study;
+    setStudents(prev=>prev.map(item=>item.id===updated.id ? linked.student : item));
+    setCaseStudies(prev=>({...prev,[updated.id]:linked}));
+    if (targetsChanged || categoriesChanged) setAssessments(prev=>({...prev,[updated.id]:applyStudentTargetsToAssessment(prev[updated.id] || currentAssessment,letters,updatedProfile.diagnosisCategories || [],currentStudent.targetLetters)}));
+  };
+
   const handleAddNewStudent = (newStudent: StudentProfile, targetLetters: ArabicLetterKey[]) => {
     const newRecords = createNewStudentRecords(newStudent, targetLetters);
 
@@ -458,7 +469,7 @@ function WorkspaceApp({ user }: { user: User | null }) {
                 {!currentStudent?.deletedAt && <details className="relative print:hidden">
                   <summary aria-label="إدارة بيانات الطالب" title="إدارة بيانات الطالب" className="list-none cursor-pointer rounded-lg p-2 text-white hover:bg-sky-700">✎</summary>
                   <div className="absolute top-full left-0 z-50 mt-2 w-60 rounded-xl border bg-white p-2 shadow-xl">
-                    <button type="button" className="block w-full rounded-lg p-3 text-right text-sky-900" onClick={e => { e.currentTarget.closest('details')?.removeAttribute('open'); setActiveTab('casestudy'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>تعديل اسم وبيانات الطالب</button>
+                    <button type="button" className="block w-full rounded-lg p-3 text-right text-sky-900" onClick={e => { e.currentTarget.closest('details')?.removeAttribute('open'); setEditingProfile(true); setIsNewStudentModalOpen(true); }}>تعديل اسم وبيانات الطالب</button>
                     <button type="button" className="block w-full rounded-lg p-3 text-right text-rose-800 hover:bg-rose-50" onClick={e => {
                       e.currentTarget.closest('details')?.removeAttribute('open');
                       if (!window.confirm(`نقل الطالب ${currentStudent.fullName} إلى المحذوفين؟ تبقى بياناته قابلة للاسترجاع.`)) return;
@@ -473,7 +484,7 @@ function WorkspaceApp({ user }: { user: User | null }) {
               {/* Add New Student Button */}
 
               <button
-                onClick={() => setIsNewStudentModalOpen(true)}
+                onClick={() => { setEditingProfile(false); setIsNewStudentModalOpen(true); }}
                 className="flex w-full sm:w-auto items-center justify-center gap-1.5 bg-sky-600 hover:bg-sky-500 text-white font-black text-xs px-3 py-2 rounded-xl shadow-xs transition-all active:scale-95 cursor-pointer"
                 title="تسجيل طالب جديد في برنامج تدريبات النطق"
               >
@@ -728,6 +739,7 @@ function WorkspaceApp({ user }: { user: User | null }) {
           <LongTermPlanView key={activeStudentId}
             student={currentStudent}
             plan={linkedCurrentLTPlan}
+            onChangeTargets={letters=>saveStudentProfile(currentStudent,letters)}
             onUpdatePlan={updated =>
               setLongTermPlans(prev => ({ ...prev, [activeStudentId]: updated }))
             }
@@ -805,11 +817,16 @@ function WorkspaceApp({ user }: { user: User | null }) {
       </main>
 
       {/* New Student Registration Modal */}
-      <NewStudentModal
+      {isNewStudentModalOpen && <NewStudentModal
+        initial={editingProfile ? currentStudent : undefined}
         isOpen={isNewStudentModalOpen}
         onClose={() => setIsNewStudentModalOpen(false)}
-        onAddStudent={handleAddNewStudent}
-      />
+        onAddStudent={(updated,letters) => {
+          if (!editingProfile) return handleAddNewStudent(updated, letters);
+          saveStudentProfile(updated, letters);
+          setActiveTab('diagnosis');
+        }}
+      />}
 
       {/* Footer */}
       <footer className="bg-white border-t border-sky-100 py-6 text-center text-xs text-slate-500 print:hidden">

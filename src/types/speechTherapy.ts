@@ -218,6 +218,7 @@ export interface LongTermPlanGoal {
 
 export interface LongTermPlan {
   fluencyPlanKey?: string;
+  stutteringStages?: {title:string;time:string;goal:string;activities:string[]}[];
   id: string;
   studentId: string;
   academicYear: string;

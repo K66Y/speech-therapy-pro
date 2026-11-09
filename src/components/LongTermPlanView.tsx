@@ -1,3 +1,5 @@
+import { TargetLettersEditor } from './TargetLettersEditor';
+import { stutteringStages } from '../data/stutteringStages';
 import { SavedSelect } from './SavedSelect';
 import { SavedField } from './SavedField';
 import { EditableText } from './EditableText';
@@ -21,6 +23,7 @@ import { ARABIC_LETTERS_LIST } from '../data/arabicLettersData';
 interface LongTermPlanViewProps {
   student: StudentProfile;
   plan: LongTermPlan;
+  onChangeTargets: (letters:ArabicLetterKey[])=>void;
   onUpdatePlan: (updated: LongTermPlan) => void;
   onExportDocx: () => void;
   isExportingDocx: boolean;
@@ -29,7 +32,7 @@ interface LongTermPlanViewProps {
 export const LongTermPlanView: React.FC<LongTermPlanViewProps> = ({
   student,
   plan,
-  onUpdatePlan,
+  onUpdatePlan, onChangeTargets,
   onExportDocx,
   isExportingDocx
 }) => {
@@ -43,6 +46,12 @@ export const LongTermPlanView: React.FC<LongTermPlanViewProps> = ({
     setData(updated);
     onUpdatePlan(updated);
   };
+  const stages = data.stutteringStages || stutteringStages;
+  const saveStage = (index:number, changes:Partial<typeof stages[number]>) => {
+    const updated = {...data,stutteringStages:stages.map((stage,i)=>i===index ? {...stage,...changes} : stage)};
+    setData(updated);
+    onUpdatePlan(updated);
+  };
   const updateTool = (index: number, value: string) => {
     const toolsUsed = [...data.toolsUsed];
     toolsUsed[index] = value;
@@ -51,7 +60,8 @@ export const LongTermPlanView: React.FC<LongTermPlanViewProps> = ({
     onUpdatePlan(updated);
   };
   const addGoal = () => {
-    const letter = newGoalLetter;
+    const letter = student.targetLetters?.includes(newGoalLetter) ? newGoalLetter : student.targetLetters?.[0];
+    if (!letter) return;
     const first = data.goals[0];
     const newGoal = { ...(first || {}), id: `ltg-${student.id}-${Date.now()}`, code: `هدف عام ${data.goals.length + 1}`, targetLetter: letter, goalDescription: `أن ينطق الطالب صوت حرف (${letter}) في مواضعه المختلفة وفق معيار الإتقان المحدد.`, successCriterion: first?.successCriterion || '', successTargetPercentage: first?.successTargetPercentage ?? 90, targetPeriod: first?.targetPeriod || 'فصل دراسي', startingBaseline: '', finalExpectedOutcome: '', evaluationMethod: first?.evaluationMethod || '', progressPercentage: 0 };
     newGoal.id = `ltg-${crypto.randomUUID()}`;
@@ -119,7 +129,7 @@ export const LongTermPlanView: React.FC<LongTermPlanViewProps> = ({
             <label><span className="text-slate-500 block text-[11px]">العام الدراسي:</span><SavedField aria-label="العام الدراسي" value={data.academicYear} onChange={e => { const updated={...data,academicYear:e.target.value}; setData(updated); onUpdatePlan(updated); }} className="w-full bg-transparent font-bold text-slate-800 print:border-0" /></label>
             <label><span className="text-slate-500 block text-[11px]">الفصل الدراسي:</span><SavedField aria-label="الفصل الدراسي" value={data.semester} onChange={e => { const updated={...data,semester:e.target.value}; setData(updated); onUpdatePlan(updated); }} className="w-full bg-transparent font-bold text-slate-800 print:border-0" /></label>
             <label><span className="text-slate-500 block text-[11px]">مدة الخطة:</span><SavedField aria-label="مدة الخطة" value={data.goals[0]?.targetPeriod || ''} onChange={e => { const updated={...data,goals:data.goals.map(goal=>({...goal,targetPeriod:e.target.value}))}; setData(updated); onUpdatePlan(updated); }} className="w-full bg-transparent font-bold text-slate-800 print:border-0" /></label>
-            <div><span className="text-slate-500 block text-[11px]">الحروف المستهدفة:</span><strong className="text-emerald-800">{data.goals.map(goal=>goal.targetLetter).join('، ')}</strong></div>
+            <div><span className="text-slate-500 block text-[11px]">الحروف المستهدفة:</span><TargetLettersEditor value={student.targetLetters || []} onSave={onChangeTargets} /></div>
           </div>
 
           {!!student.communicationDiagnoses?.length && <section className="mb-6 rounded-2xl border border-sky-200 bg-sky-50/50 p-5">
@@ -135,8 +145,11 @@ export const LongTermPlanView: React.FC<LongTermPlanViewProps> = ({
                     onUpdatePlan(updated);
                   }} className="mt-1 w-full rounded-xl border border-slate-200 p-3 font-normal leading-7" />
                 </label>
-                <ul className="mt-3 list-disc space-y-2 pr-5 text-xs leading-6 text-slate-700">{guide.methods.map(method => <li key={method}>{method}</li>)}</ul>
-                <p className="mt-3 rounded-lg bg-amber-50 p-3 text-xs leading-6"><strong>تنسيق التنفس:</strong> {guide.breathing}</p>
+                {diagnosis === 'stuttering' ? <div className="mt-4 space-y-4">{stages.map((stage,index)=><section key={stage.title} className="break-inside-avoid rounded-xl border p-4">
+                  <h4 className="font-bold">{stage.title}</h4><p className="text-xs text-slate-600">{stage.time}</p>
+                  <div className="mt-2"><strong>الهدف: </strong><EditableText label="هدف المرحلة" value={stage.goal} onSave={goal=>saveStage(index,{goal})} /></div><ul className="mt-2 list-disc space-y-1 pr-5">{stage.activities.map((activity,n)=><li key={n}><EditableText label="نشاط المرحلة" value={activity} onSave={value=>saveStage(index,{activities:stage.activities.map((v,i)=>i===n ? value : v)})} /></li>)}</ul>
+                </section>)}</div> : <><ul className="mt-3 list-disc space-y-2 pr-5 text-xs leading-6 text-slate-700">{guide.methods.map(method => <li key={method}>{method}</li>)}</ul>
+                <p className="mt-3 rounded-lg bg-amber-50 p-3 text-xs leading-6"><strong>تنسيق التنفس:</strong> {guide.breathing}</p></>}
               </article>;
             })}
           </section>}
@@ -149,7 +162,7 @@ export const LongTermPlanView: React.FC<LongTermPlanViewProps> = ({
             </h3>
 
             <div className="space-y-4">
-              <div className="flex flex-wrap items-center gap-3 print:hidden"><label className="text-sm">حرف الهدف الجديد <select aria-label="حرف الهدف الجديد" value={newGoalLetter} onChange={e => setNewGoalLetter(e.target.value as ArabicLetterKey)} className="rounded-lg border p-2">{ARABIC_LETTERS_LIST.map(letter => <option key={letter}>{letter}</option>)}</select></label><button type="button" onClick={addGoal} className="text-xs rounded-lg bg-emerald-800 px-3 py-2 font-bold text-white print:hidden">إضافة هدف لحرف مستهدف</button>{addedGoalId && <span role="status" className="text-sm text-emerald-800">تمت إضافة الهدف، ويمكنك اختيار تفاصيله الآن.</span>}</div>
+              <div className="flex flex-wrap items-center gap-3 print:hidden"><label className="text-sm">حرف الهدف الجديد <select aria-label="حرف الهدف الجديد" value={newGoalLetter} onChange={e => setNewGoalLetter(e.target.value as ArabicLetterKey)} className="rounded-lg border p-2">{(student.targetLetters || []).map(letter => <option key={letter}>{letter}</option>)}</select></label><button type="button" onClick={addGoal} className="text-xs rounded-lg bg-emerald-800 px-3 py-2 font-bold text-white print:hidden">إضافة هدف لحرف مستهدف</button>{addedGoalId && <span role="status" className="text-sm text-emerald-800">تمت إضافة الهدف، ويمكنك اختيار تفاصيله الآن.</span>}</div>
               {data.goals.map((g, index) => (
                 <div
                   key={g.id}
@@ -163,7 +176,7 @@ export const LongTermPlanView: React.FC<LongTermPlanViewProps> = ({
                       </span>
                     <button type="button" className="text-xs text-rose-700 print:hidden" onClick={() => { if (window.confirm('حذف هذا الهدف؟')) { const updated = { ...data, goals: data.goals.filter(goal => goal.id !== g.id) }; setData(updated); onUpdatePlan(updated); } }}>حذف الهدف</button>
                     <label className="text-xs font-bold text-slate-600">الحرف:
-                        <SavedSelect value={g.targetLetter} onChange={e => { const targetLetter = e.target.value as typeof g.targetLetter; const replace = (value: string) => value.split(g.targetLetter).join(targetLetter); updateGoal(g.id, { targetLetter, goalDescription: replace(g.goalDescription), startingBaseline: replace(g.startingBaseline), finalExpectedOutcome: replace(g.finalExpectedOutcome) }); }} className="mr-1 rounded border border-slate-200 bg-white p-1 print:hidden">{ARABIC_LETTERS_LIST.map(letter => <option key={letter}>{letter}</option>)}</SavedSelect>
+                        <SavedSelect value={g.targetLetter} onChange={e => { const targetLetter = e.target.value as typeof g.targetLetter; const replace = (value: string) => value.split(g.targetLetter).join(targetLetter); updateGoal(g.id, { targetLetter, goalDescription: replace(g.goalDescription), startingBaseline: replace(g.startingBaseline), finalExpectedOutcome: replace(g.finalExpectedOutcome) }); }} className="mr-1 rounded border border-slate-200 bg-white p-1 print:hidden">{(student.targetLetters || []).map(letter => <option key={letter}>{letter}</option>)}</SavedSelect>
                         
                       </label>
                     </div>

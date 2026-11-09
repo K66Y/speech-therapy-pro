@@ -788,7 +788,7 @@ export const DiagnosisView: React.FC<DiagnosisViewProps> = ({
             <p className="mt-2 text-sm leading-7">{COMMUNICATION_THERAPY_GUIDES[diagnosis].assessment}</p>
             <p className="mt-2 text-sm leading-7"><strong>تنسيق التنفس والكلام:</strong> {COMMUNICATION_THERAPY_GUIDES[diagnosis].breathing}</p>
             <div className="mt-2 flex flex-wrap gap-3 text-xs text-sky-800 print:hidden">
-              {COMMUNICATION_THERAPY_GUIDES[diagnosis].references.map(reference => <a key={reference.url} href={reference.url} target="_blank" rel="noreferrer" className="underline">{reference.label}</a>)}
+              
             </div>
           </article>)}
         </section>
