@@ -11,8 +11,8 @@ export function diagnosisCategoriesForTargets(
   targets: ArabicLetterKey[],
   source: string[] = []
 ): string[] {
-  const errors = source.map(extractErrorType).filter(Boolean) as ErrorType[];
-  return targets.map((letter, index) => `${errors[index] || errors[0] || 'إبدال'} حرف (${letter})`);
+  const errors = source.filter(value=>!value.includes('(')).map(extractErrorType).filter(Boolean) as ErrorType[];
+  return targets.map((letter, index) => source.find(value=>value.includes('('+letter+')')) || `${errors[index] || errors[0] || 'قيد التقييم'} حرف (${letter})`);
 }
 
 export function linkCaseStudyClinicalFields(
@@ -30,14 +30,17 @@ export function linkCaseStudyClinicalFields(
       diagnosisCategory: diagnosisCategories.join('، '),
       diagnosisCategories
     },
-    initialDiagnosis: targets.length
-      ? `اضطراب نطق وظيفي في الأصوات المستهدفة (${letters}) يتمثل في ${diagnosisCategories.join('، ')}، مع سلامة أعضاء النطق تشريحياً وفق الفحص الحالي.`
-      : 'لم تُحدد أصوات مستهدفة بعد، ويُستكمل التشخيص بعد تسجيل نتائج التقييم النطقي.',
-    recommendations: targets.length ? [
-      `تدريب الأصوات المستهدفة (${letters}) بالتدرج من الصوت المفرد إلى المقاطع ثم الكلمات والجمل والتواصل وفق الأداء المسجل.`,
-      `استخدام المرآة لتوفير تغذية راجعة بصرية عند تدريب مخارج الأصوات (${letters}).`,
-      'تطبيق تدريب منزلي قصير ومنتظم، وتوثيق الاستجابة لمراجعتها في الجلسة التالية.'
-    ] : ['استكمال التقييم وتحديد الأصوات المستهدفة قبل اعتماد خطة التدخل.']
+    clinicalInputKey: JSON.stringify([targets,diagnosisCategories,caseStudy.student.communicationDiagnoses || [],caseStudy.oralMotorExam,caseStudy.speechHistory,caseStudy.hearingStatus]),
+    initialDiagnosis: [
+      targets.length ? 'الحروف المستهدفة: ' + diagnosisCategories.join('، ') + '. تُراجع الأخطاء في مواضع الكلمة قبل تحديد مستوى التدريب.' : '',
+      ...(caseStudy.student.communicationDiagnoses || []).map(d => d === 'stuttering' ? 'مسار التأتأة: توثّق مظاهر عدم الطلاقة وأثرها في المشاركة وتحدد الشدة في التقييم.' : 'مسار الحبسة الكلامية: يراجع التاريخ الطبي وتفحص مهارات الفهم والتعبير والتسمية والتواصل الوظيفي.'),
+    ].filter(Boolean).join(' ') || 'تستكمل دراسة الحالة لتحديد مجال التدخل.',
+    recommendations: [
+      ...(targets.length ? ['تدريب الحروف (' + letters + ') في المواضع التي ثبتت فيها الصعوبة ثم قياس الأداء في كلمات جديدة.'] : []),
+      ...(caseStudy.student.communicationDiagnoses || []).map(d => d === 'stuttering' ? 'اجمع عينة من الحوار والسرد وسجل التكرار والإطالة والوقفات والجهد. اسأل الطالب عن الراحة والتجنب واتفق معه على موقف مشاركة يهمه.' : 'حدد أولوية تواصل وظيفية من تقييم الفهم والتعبير، وجرّب صورة أو كلمة مفتاحية ثم سجل الاستجابة ودرجة التلميح.'),
+      ...(caseStudy.oralMotorExam.breathing.type === 'فموي' ? ['راجع نمط التنفس الفموي المسجل وأثره الوظيفي قبل اختيار أي تدريب.'] : []),
+      'راجع نتائج الفحص والتاريخ النمائي والسمعي مع الأسرة قبل اعتماد الأهداف.'
+    ]
   };
 }
 

@@ -200,19 +200,7 @@ export const HomeworkView: React.FC<HomeworkViewProps> = ({
           <p className="mt-2 rounded-lg bg-amber-50 p-3 text-xs leading-6"><strong>ملاحظة التنفس:</strong> {COMMUNICATION_THERAPY_GUIDES[activePracticeType].breathing}</p>
         </section>}
 
-        {!!student.communicationDiagnoses?.length && activePracticeType === 'letters' && <section className="mb-6 rounded-2xl border border-sky-200 bg-sky-50/60 p-5">
-          <h3 className="font-black text-sky-950">واجب التواصل والطلاقة المرتبط بتشخيص الطالب</h3>
-          <p className="mt-1 text-xs leading-6 text-slate-600">تظهر إرشادات الحالة المختارة، ويمكن تعديل نص الواجب قبل طباعته أو تصديره.</p>
-          {student.communicationDiagnoses.filter(diagnosis => diagnosis === activePracticeType).map((diagnosis: CommunicationDiagnosis) => {
-            const guide = COMMUNICATION_THERAPY_GUIDES[diagnosis];
-            return <label key={diagnosis} className="mt-3 block text-sm font-bold">{guide.label}
-              <SavedField multiline rows={4} aria-label={`واجب منزلي: ${guide.label}`} value={activeHw.communicationHomePractice?.[diagnosis] ?? guide.homePractice} onChange={event => updateHomework({
-                communicationHomePractice: { ...activeHw.communicationHomePractice, [diagnosis]: event.target.value }
-              })} className="mt-1 w-full rounded-xl border border-slate-200 bg-white p-3 font-normal leading-7" />
-            </label>;
-          })}
-          {student.communicationDiagnoses.filter(diagnosis => diagnosis === activePracticeType).map(diagnosis => <p key={diagnosis} className="mt-3 rounded-lg bg-white p-3 text-xs leading-6"><strong>طريقة تدريب مناسبة في الجلسة:</strong> {COMMUNICATION_THERAPY_GUIDES[diagnosis].methods[0]}</p>)}
-        </section>}
+
 
                 {/* Practice Words Table with repetition checklist */}
         {activePracticeType === 'letters' && <div className="mb-6">

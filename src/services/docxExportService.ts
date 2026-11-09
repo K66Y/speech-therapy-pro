@@ -518,7 +518,7 @@ export async function exportDiagnosisDocx(student: StudentProfile, assessment: D
             bidirectional: true,
             spacing: { after: 120 },
             children: [
-              new TextRun({ text: recommendation.decision === 'needs_training' ? 'يوصى بحاجة الطالب إلى تدريب. ' : 'لا يحتاج إلى تدريب. ', font: 'Cairo', bold: true, rightToLeft: true }),
+              new TextRun({ text: !assessment.recommendationDecision ? 'يستكمل التقييم. ' : recommendation.decision === 'needs_training' ? 'يوصى بحاجة الطالب إلى تدريب. ' : 'لا يحتاج إلى تدريب. ', font: 'Cairo', bold: true, rightToLeft: true }),
               new TextRun({ text: recommendation.text, font: 'Cairo', rightToLeft: true })
             ]
           }),
@@ -537,7 +537,7 @@ export async function exportDiagnosisDocx(student: StudentProfile, assessment: D
             bidirectional: true,
             spacing: { after: 120 },
             children: [
-              new TextRun({ text: assessment.summaryConclusion, font: 'Cairo', rightToLeft: true })
+              ...assessment.summaryConclusion.split('\n').map((text,i) => new TextRun({ text, break: i ? 1 : 0, bold: i === 0 || text.startsWith('التوصية المختارة'), font: 'Cairo', rightToLeft: true }))
             ]
           }),
 

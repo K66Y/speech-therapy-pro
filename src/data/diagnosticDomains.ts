@@ -49,7 +49,7 @@ function mergeDomain<K extends keyof DiagnosticDomains>(key: K, saved?: Diagnost
   return {
     ...fallback,
     ...saved,
-    ...(isLegacy ? { evaluation: fallback.evaluation, status: fallback.status } : {})
+    ...(isLegacy && saved.status === 'لم يُقيّم' ? { evaluation: fallback.evaluation } : {})
   };
 }
 

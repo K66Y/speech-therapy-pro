@@ -128,6 +128,7 @@ export interface OralMotorExam {
 }
 
 export interface CaseStudyData {
+  clinicalInputKey?: string;
   student: StudentProfile;
   medicalHistory: string;
   developmentHistory: string;
@@ -165,6 +166,10 @@ export interface LetterEvaluationItem {
 }
 
 export interface DiagnosticAssessment {
+  fluencySeverity?: 'بسيطة' | 'متوسطة' | 'شديدة';
+  fluencySample?: string;
+  fluencyObservations?: string[];
+  recommendationInputKey?: string;
   studentId: string;
   assessmentDate: string;
   specialistName: string; // ظافر ناصر الشهراني
@@ -212,6 +217,7 @@ export interface LongTermPlanGoal {
 }
 
 export interface LongTermPlan {
+  fluencyPlanKey?: string;
   id: string;
   studentId: string;
   academicYear: string;

@@ -1,3 +1,4 @@
+import { assessmentNarrative } from '../services/clinicalNarrative';
 import { SavedField } from './SavedField';
 import { consistentDiagnosisNote } from '../services/diagnosisNotes';
 import { SavedSelect } from './SavedSelect';
@@ -113,7 +114,8 @@ export const DiagnosisView: React.FC<DiagnosisViewProps> = ({
   };
 
   const domains = diagnosticDomainsFor(data);
-  const recommendation = recommendationFor(data);
+  const narrative = assessmentNarrative(student,data);
+  const recommendation = {decision:narrative.decision,text:narrative.recommendation};
 
   const updateDomain = (
     key: keyof DiagnosticDomains,
@@ -133,7 +135,7 @@ export const DiagnosisView: React.FC<DiagnosisViewProps> = ({
     const text = decision === 'needs_training'
       ? 'يوصى بحاجة الطالب إلى تدريب متخصص وفق نتائج التقييم، مع متابعة التقدم وتحديث الأهداف بما يتناسب مع استجابته.'
       : 'لا يحتاج الطالب إلى تدريب في الوقت الحالي وفق نتائج التقييم، مع الاستمرار في المتابعة وإعادة التقييم عند ظهور حاجة جديدة.';
-    commitAssessment({ ...data, recommendationDecision: decision, recommendationText: text });
+    commitAssessment({ ...data, recommendationInputKey:narrative.key, recommendationDecision: decision, recommendationText: text });
   };
 
   const handlePositionChange = (
@@ -281,52 +283,6 @@ export const DiagnosisView: React.FC<DiagnosisViewProps> = ({
   };
 
   // توليد الخلاصة الإكلينيكية آلياً بناءً على التشخيص الميداني
-  const handleAutoGenerateSummary = () => {
-    const sections: string[] = [];
-    const selectedTargets = (student.targetLetters || []).filter(letter => ARABIC_LETTERS_LIST.includes(letter));
-    if (selectedTargets.length) {
-      const findings: string[] = [];
-      for (const letter of selectedTargets) {
-        const result = data.lettersResults[letter];
-        const positions = ([
-          ['beginning', 'أول الكلمة'],
-          ['middle', 'وسط الكلمة'],
-          ['end', 'آخر الكلمة']
-        ] as const).filter(([key]) => result?.[key]?.production && result[key].production !== 'صحيح')
-          .map(([key]) => `${key === 'beginning' ? 'أول الكلمة' : key === 'middle' ? 'وسط الكلمة' : 'آخر الكلمة'}: ${result?.[key]?.production}`);
-        if (positions.length) findings.push(`الحرف (${letter}) — ${positions.join('، ')}`);
-      }
-      sections.push(findings.length
-        ? `نتائج الحروف المستهدفة: ${findings.join('؛ ')}.`
-        : 'لم تُسجّل نتيجة خطأ للحروف المستهدفة في المواضع المدخلة. لا يُعد ذلك حكمًا نهائيًا قبل استكمال العينة ومراجعتها.');
-      sections.push(`نسبة الأداء في فحص الحروف: ${currentScore}% (تُفسر ضمن العينة المسجلة فقط).`);
-    } else {
-      sections.push('لا توجد حروف مستهدفة في ملف الطالب؛ لم يُجرَ فحص نطق الحروف ضمن هذه الخلاصة.');
-    }
-    const diagnoses = student.communicationDiagnoses || [];
-    const domains = diagnosticDomainsFor(data);
-    const domainLabels: Record<keyof DiagnosticDomains, string> = {
-      fluency: 'الطلاقة والتأتأة',
-      receptiveLanguage: 'اللغة الاستقبالية',
-      expressiveLanguage: 'اللغة التعبيرية',
-      vocabulary: 'الحصيلة اللغوية',
-      eyeContact: 'التواصل البصري والانتباه المشترك',
-      aphasia: 'الحبسة الكلامية'
-    };
-    if (diagnoses.length) sections.push(`المسارات التواصلية المسجلة: ${diagnoses.map(item => COMMUNICATION_THERAPY_GUIDES[item].label).join('، ')}. تسجيل المسار لا يغني عن استكمال التقييم.`);
-    sections.push('نتائج مجالات التقييم: ' + (Object.keys(domainLabels) as Array<keyof DiagnosticDomains>).map(key => {
-      const domain = domains[key];
-      const registered = key === 'fluency' ? diagnoses.includes('stuttering') : key === 'aphasia' ? diagnoses.includes('aphasia') : false;
-      const status = domain.status === 'لم يُقيّم' && registered ? 'مسجل ويحتاج إلى استكمال التقييم' : domain.status;
-      return `${domainLabels[key]}: ${status} — ${domain.evaluation}`;
-    }).join(' | '));
-    const recommendation = recommendationFor(data);
-    sections.push(`التوصية المختارة: ${recommendation.decision === 'needs_training' ? 'يوصى بتدريب' : 'لا يحتاج إلى تدريب حاليًا'}؛ ${recommendation.text}`);
-    commitAssessment({ ...data, summaryConclusion: sections.join('\n\n'), summaryNeedsReview: false });
-    setGeneratedNotice(true);
-    setTimeout(() => setGeneratedNotice(false), 3000);
-  };
-
   const handleExportDocx = async () => {
     setIsExporting(true);
     try {
@@ -837,6 +793,22 @@ export const DiagnosisView: React.FC<DiagnosisViewProps> = ({
           </article>)}
         </section>
 
+        <section className="mb-5 space-y-3 rounded-xl border p-4">
+          <h3 className="font-bold">تقدير شدة التأتأة</h3>
+          <label>تقدير الأخصائي <SavedSelect value={data.fluencySeverity || ''} onChange={e => commitAssessment({...data, fluencySeverity: (e.target.value || undefined) as DiagnosticAssessment['fluencySeverity']})}>
+            <option value="">لم تحدد</option><option>بسيطة</option><option>متوسطة</option><option>شديدة</option>
+          </SavedSelect></label>
+          <p>خذ عينة من الحوار والسرد، وسجل تكرار المقاطع والإطالات والوقفات ومدتها والشد المصاحب. اسأل الطالب والأسرة عن التجنب وأثر الصعوبة في المشاركة. إذا استُخدمت أداة معيارية ملائمة للعمر واللغة فدوّن اسمها ونتيجتها.</p>
+          <fieldset className="space-y-2"><legend className="font-bold">ملاحظات من العينة (اختر ما لوحظ)</legend>
+            <div className="flex flex-wrap gap-2">{['تكرار صوت أو مقطع','إطالة صوت','وقفة أو انحباس','شد أو حركة مصاحبة','تجنب كلمة أو موقف','أثر على المشاركة الصفية'].map(item => {
+              const observations = data.fluencyObservations || [];
+              return <label key={item} className="flex items-center gap-2 rounded-lg border px-3 py-2"><input type="checkbox" checked={observations.includes(item)} onChange={e => commitAssessment({...data,fluencyObservations:e.target.checked ? [...observations,item] : observations.filter(x=>x!==item)})}/>{item}</label>;
+            })}</div>
+          </fieldset>
+          <label>نتائج العينة وأثرها على الطالب <SavedField multiline value={data.fluencySample || ''} aria-label="نتائج عينة الطلاقة" onChange={e=>commitAssessment({...data,fluencySample:e.target.value})} /></label>
+          <p className="text-xs"><a href="https://www.moh.gov.sa/HealthAwareness/EducationalContent/babyhealth/Pages/Stuttering.aspx">وزارة الصحة السعودية</a> · <a href="https://www.asha.org/practice-portal/clinical-topics/fluency-disorders/">دليل ASHA لتقييم الطلاقة</a></p>
+        </section>
+
         <section className="mb-8 space-y-4" aria-labelledby="supporting-assessments-title">
           <div className="flex items-center gap-2 border-b border-sky-200 pb-3">
             <CheckCircle2 className="h-5 w-5 text-sky-700" />
@@ -896,15 +868,16 @@ export const DiagnosisView: React.FC<DiagnosisViewProps> = ({
             <h3 id="recommendation-title" className="text-sm font-black text-emerald-950">التوصية التشخيصية</h3>
             <SavedSelect
               aria-label="قرار التوصية التشخيصية"
-              value={recommendation.decision}
+              value={recommendation.decision || ""}
               onChange={event => updateRecommendationDecision(event.target.value as 'needs_training' | 'no_training')}
               className="rounded-xl border border-emerald-300 bg-white px-3 py-2 text-xs font-black text-emerald-950 print:hidden"
             >
+              <option value="" disabled>يحتاج إلى استكمال التقييم</option>
               <option value="needs_training">يوصى بحاجة الطالب إلى تدريب</option>
               <option value="no_training">لا يحتاج إلى تدريب</option>
             </SavedSelect>
             <span className="hidden text-xs font-black text-emerald-950 print:block">
-              {recommendation.decision === 'needs_training' ? 'يوصى بحاجة الطالب إلى تدريب' : 'لا يحتاج إلى تدريب'}
+              {recommendation.decision === 'needs_training' ? 'يوصى بحاجة الطالب إلى تدريب' : recommendation.decision === 'no_training' ? 'لا يحتاج إلى تدريب' : 'يستكمل التقييم'}
             </span>
           </div>
           <SavedField
@@ -912,48 +885,18 @@ export const DiagnosisView: React.FC<DiagnosisViewProps> = ({
             rows={3}
             aria-label="نص التوصية القابل للتعديل"
             value={recommendation.text}
-            onChange={event => commitAssessment({ ...data, recommendationDecision: recommendation.decision, recommendationText: event.target.value })}
+            onChange={event => commitAssessment({ ...data, recommendationInputKey:narrative.key, recommendationDecision: recommendation.decision, recommendationText: event.target.value })}
             className="w-full rounded-xl border border-emerald-200 bg-white p-3 text-xs font-semibold leading-relaxed text-slate-800"
           />
           <p className="mt-2 text-[11px] text-emerald-800 print:hidden">يمكن تعديل نص التوصية مباشرة، وتحفظ التغييرات مع ملف الطالب.</p>
         </section>
 
-        {/* Conclusion / Summary notes with Auto-generate Button & Direct Manual Edit */}
-        {data.summaryNeedsReview && <p role="status" className="rounded-lg bg-amber-50 p-3 text-amber-900">تغيّرت نتائج النطق. راجع الخلاصة أو أعد توليدها قبل الطباعة؛ لم نستبدل نصك المحفوظ تلقائياً.</p>}
-        <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 mb-8 space-y-3">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <label className="font-black text-slate-800 text-xs flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-sky-700" />
-              الخلاصة الإكلينيكية<span className="print:hidden"> - قابلة للتعديل المباشر</span>:
-            </label>
-
-            {/* Smart Auto-Generate Button */}
-            <button
-              onClick={handleAutoGenerateSummary}
-              className="flex items-center gap-2 bg-gradient-to-l from-sky-900 to-sky-700 hover:from-sky-800 hover:to-sky-600 text-white text-xs font-bold px-4 py-2 rounded-xl shadow-md transition-all active:scale-95 cursor-pointer self-start sm:self-auto"
-            >
-              <Wand2 className="w-3.5 h-3.5 text-amber-300" />
-              توليد الخلاصة الإكلينيكية آلياً بناءً على التشخيص
-            </button>
-          </div>
-
-          {generatedNotice && (
-            <div className="p-2.5 rounded-xl bg-sky-100 border border-sky-300 text-sky-950 text-xs font-bold animate-pulse print:hidden">
-              ✓ تم استخراج وتحليل بيانات جميع الحروف وتوليد التقرير الإكلينيكي بنجاح! يمكنك الآن تعديله يدوياً حسب الرغبة.
-            </div>
-          )}
-
-          <SavedField multiline
-            rows={5}
-            aria-label="ملخص التشخيص" value={data.summaryConclusion}
-            onChange={e => {
-              const updated = { ...data, summaryConclusion: e.target.value };
-              commitAssessment(updated);
-            }}
-            className="w-full bg-white border border-slate-300 rounded-xl p-3.5 text-xs text-slate-800 leading-relaxed font-semibold focus:ring-2 focus:ring-sky-600 focus:outline-hidden"
-            placeholder="اكتب التقرير الإكلينيكي يدوياً أو انقر على 'توليد الخلاصة الإكلينيكية آلياً'..."
-          />
-        </div>
+        <section className="mb-8 space-y-3 rounded-xl border bg-white p-5">
+          <h3 className="font-bold">الخلاصة الإكلينيكية</h3>
+          <strong className="block">{narrative.diagnosis}</strong>
+          {narrative.rows.map(row => <p className="font-normal" key={row}>{row}</p>)}
+          <strong className="block">التوصية المختارة: {narrative.recommendation}</strong>
+        </section>
 
         {/* Official Specialist Signature Row Only */}
         <div className="pt-8 border-t border-slate-300 flex justify-center text-xs text-center">

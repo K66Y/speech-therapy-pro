@@ -1,3 +1,4 @@
+import { assessmentNarrative, linkFluencyPlan } from './services/clinicalNarrative';
 import React, { useState, useEffect, useMemo } from 'react';
 import type { User } from 'firebase/auth';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
@@ -236,9 +237,18 @@ function WorkspaceApp({ user }: { user: User | null }) {
     [currentStudent?.id, currentStudent?.targetLetters?.join('|'), currentStudent?.communicationDiagnoses?.join('|')]
   );
   // Never borrow another student's record as a fallback; every screen stays scoped to the active case.
-  const currentCaseStudy = caseStudies[activeStudentId] || fallbackRecords.caseStudy;
-  const currentAssessment = assessments[activeStudentId] || fallbackRecords.assessment;
-  const currentLTPlan = longTermPlans[activeStudentId] || fallbackRecords.longTermPlan;
+  const savedStudy = caseStudies[activeStudentId] || fallbackRecords.caseStudy;
+  const currentCaseStudy = useMemo(() => {
+    const linked = linkCaseStudyClinicalFields({...savedStudy, student:currentStudent},currentStudent.targetLetters || []);
+    return linked.clinicalInputKey === savedStudy.clinicalInputKey ? savedStudy : linked;
+  }, [savedStudy,currentStudent]);
+  const rawAssessment = assessments[activeStudentId] || fallbackRecords.assessment;
+  const currentAssessment = useMemo(() => {
+    const n = assessmentNarrative(currentStudent, rawAssessment);
+    return {...rawAssessment, recommendationDecision:n.decision, recommendationText:n.recommendation, summaryConclusion:[n.diagnosis,...n.rows,'التوصية المختارة: ' + n.recommendation].join('\n'),summaryNeedsReview:false};
+  }, [currentStudent,rawAssessment]);
+  const rawLTPlan = longTermPlans[activeStudentId] || fallbackRecords.longTermPlan;
+  const currentLTPlan = useMemo(() => linkFluencyPlan(rawLTPlan,currentStudent,currentAssessment),[rawLTPlan,currentStudent,currentAssessment]);
   const savedSTPlan = shortTermPlans[activeStudentId] || fallbackRecords.shortTermPlan;
   const savedSteps = savedSTPlan.communicationObjectiveSteps || [];
   const currentSTPlan = { ...savedSTPlan, communicationObjectiveSteps: [...savedSteps, ...(fallbackRecords.shortTermPlan.communicationObjectiveSteps || []).filter(step => !savedSteps.some(saved => saved.diagnosis === step.diagnosis))] };
@@ -682,7 +692,8 @@ function WorkspaceApp({ user }: { user: User | null }) {
               const previousCategories = (currentStudent.diagnosisCategories || [currentStudent.diagnosisCategory]).filter(Boolean);
               const nextCategories = (updated.student.diagnosisCategories || [updated.student.diagnosisCategory]).filter(Boolean);
               const clinicalChanged = !sameLetters(previousTargets, nextTargets) || previousCategories.join('|') !== nextCategories.join('|');
-              const linked = clinicalChanged ? linkCaseStudyClinicalFields(updated, nextTargets, nextCategories) : updated;
+              const caseInputsChanged = JSON.stringify(updated.student.communicationDiagnoses) !== JSON.stringify(currentStudent.communicationDiagnoses) || JSON.stringify(updated.oralMotorExam) !== JSON.stringify(currentCaseStudy.oralMotorExam);
+              const linked = clinicalChanged || caseInputsChanged || updated.hearingStatus !== currentCaseStudy.hearingStatus || updated.speechHistory !== currentCaseStudy.speechHistory ? linkCaseStudyClinicalFields(updated, nextTargets, nextCategories) : updated;
               setCaseStudies(prev => ({ ...prev, [activeStudentId]: linked }));
               setStudents(prev => prev.map(student => student.id === linked.student.id ? linked.student : student));
               if (clinicalChanged) {
@@ -707,7 +718,7 @@ function WorkspaceApp({ user }: { user: User | null }) {
             onUpdateAssessment={updated => setAssessments(prev => ({ ...prev, [activeStudentId]: updated }))}
             onUpdateStudent={updated => {
               setStudents(prev => prev.map(item => item.id === updated.id ? updated : item));
-              setCaseStudies(prev => prev[updated.id] ? { ...prev, [updated.id]: { ...prev[updated.id], student: updated } } : prev);
+              setCaseStudies(prev => prev[updated.id] ? { ...prev, [updated.id]: linkCaseStudyClinicalFields({ ...prev[updated.id], student: updated },updated.targetLetters || []) } : prev);
             }}
           />
         )}
