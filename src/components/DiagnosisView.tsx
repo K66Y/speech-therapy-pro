@@ -786,7 +786,6 @@ export const DiagnosisView: React.FC<DiagnosisViewProps> = ({
           {(student.communicationDiagnoses || []).map(diagnosis => <article key={diagnosis} className="mt-4 rounded-xl border border-white bg-white p-4">
             <h4 className="font-black text-emerald-950">{COMMUNICATION_THERAPY_GUIDES[diagnosis].label}</h4>
             <p className="mt-2 text-sm leading-7">{COMMUNICATION_THERAPY_GUIDES[diagnosis].assessment}</p>
-            <p className="mt-2 text-sm leading-7"><strong>تنسيق التنفس والكلام:</strong> {COMMUNICATION_THERAPY_GUIDES[diagnosis].breathing}</p>
             <div className="mt-2 flex flex-wrap gap-3 text-xs text-sky-800 print:hidden">
               
             </div>

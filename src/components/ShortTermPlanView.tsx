@@ -1,3 +1,4 @@
+import { TargetLettersEditor } from './TargetLettersEditor';
 import { SavedSelect } from './SavedSelect';
 import { SavedField } from './SavedField';
 import React, { useEffect, useState } from 'react';
@@ -26,6 +27,7 @@ import { EditableText } from './EditableText';
 interface ShortTermPlanViewProps {
   student: StudentProfile;
   plan: ShortTermPlan;
+  onChangeTargets?: (letters:ArabicLetterKey[])=>void;
   onUpdatePlan: (updated: ShortTermPlan) => void;
   onExportDocx: () => void;
   isExportingDocx: boolean;
@@ -48,7 +50,7 @@ function displayLevel(level: string): string {
 export const ShortTermPlanView: React.FC<ShortTermPlanViewProps> = ({
   student,
   plan,
-  onUpdatePlan,
+  onUpdatePlan, onChangeTargets,
   onExportDocx,
   isExportingDocx
 }) => {
@@ -56,7 +58,7 @@ export const ShortTermPlanView: React.FC<ShortTermPlanViewProps> = ({
   const [addedObjectiveId, setAddedObjectiveId] = useState('');
   useEffect(() => { if (addedObjectiveId) document.getElementById(addedObjectiveId)?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, [addedObjectiveId]);
   const [selectedLetter, setSelectedLetter] = useState<ArabicLetterKey>(plan.targetLetters?.[0] || plan.targetLetter);
-  const selectableLetters = student.targetLetters?.length ? student.targetLetters : (plan.targetLetters?.length ? plan.targetLetters : []);
+  const selectableLetters = student.targetLetters ?? plan.targetLetters ?? [];
   const selectableLettersKey = selectableLetters.join('|');
 
   useEffect(() => {
@@ -171,6 +173,7 @@ export const ShortTermPlanView: React.FC<ShortTermPlanViewProps> = ({
                 مرجع الهدف العام: <strong className="text-slate-800">{data.longTermGoalRef}</strong>{selectableLetters.length > 0 && <> | الحروف المستهدفة: [ <strong className="text-emerald-800 text-sm">{selectableLetters.join('، ')}</strong> ]</>}
               </p>
             </div>
+            {onChangeTargets && <label>الحروف المستهدفة<TargetLettersEditor value={selectableLetters} onSave={onChangeTargets}/></label>}
             {selectableLetters.length > 0 && <label className="bg-white px-3 py-1.5 rounded-lg border border-teal-200 text-teal-900 font-bold shrink-0 print:hidden">حرف عرض الخطة:
               <select value={selectedLetter} onChange={e => setSelectedLetter(e.target.value as typeof selectedLetter)} className="mr-2 rounded border border-slate-200 p-1">{selectableLetters.map(letter => <option key={letter}>{letter}</option>)}</select>
             </label>}
@@ -202,7 +205,6 @@ export const ShortTermPlanView: React.FC<ShortTermPlanViewProps> = ({
                     <SavedField multiline aria-label={`نص المرحلة ${step.stepNumber}: ${guide.label}`} value={step.objectiveText} onChange={event => updateCommunicationStep(step.id, { objectiveText: event.target.value })} className="mt-2 w-full rounded-lg border border-slate-200 p-2 text-sm leading-6" />
                   </div>)}
                 </div>
-                <p className="mt-3 rounded-lg bg-amber-50 p-3 text-xs leading-6"><strong>تنسيق التنفس والكلام:</strong> {guide.breathing}</p>
               </article>;
             })}
           </section>}

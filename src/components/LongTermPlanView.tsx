@@ -149,7 +149,7 @@ export const LongTermPlanView: React.FC<LongTermPlanViewProps> = ({
                   <h4 className="font-bold">{stage.title}</h4><p className="text-xs text-slate-600">{stage.time}</p>
                   <div className="mt-2"><strong>الهدف: </strong><EditableText label="هدف المرحلة" value={stage.goal} onSave={goal=>saveStage(index,{goal})} /></div><ul className="mt-2 list-disc space-y-1 pr-5">{stage.activities.map((activity,n)=><li key={n}><EditableText label="نشاط المرحلة" value={activity} onSave={value=>saveStage(index,{activities:stage.activities.map((v,i)=>i===n ? value : v)})} /></li>)}</ul>
                 </section>)}</div> : <><ul className="mt-3 list-disc space-y-2 pr-5 text-xs leading-6 text-slate-700">{guide.methods.map(method => <li key={method}>{method}</li>)}</ul>
-                <p className="mt-3 rounded-lg bg-amber-50 p-3 text-xs leading-6"><strong>تنسيق التنفس:</strong> {guide.breathing}</p></>}
+</>}
               </article>;
             })}
           </section>}

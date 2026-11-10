@@ -71,6 +71,8 @@ export interface StudentWeeklyTherapyPlan {
 }
 
 export interface StudentProfile {
+  selectedReportWeek?: string;
+  weekReports?: Record<string,{goalId:string;text:string;longGoal:string;note:string;completed:boolean}>;
   deletedAt?: string | null;
   id: string;
   fullName: string;
@@ -249,6 +251,7 @@ export interface ShortTermObjective {
 }
 
 export interface CommunicationPlanObjective {
+  generatedText?: string;
   id: string;
   diagnosis: CommunicationDiagnosis;
   stepNumber: number;
@@ -274,6 +277,7 @@ export interface ShortTermPlan {
 }
 
 export interface DailySessionLog {
+  longTermObjective?: string;
   id: string;
   studentId: string;
   sessionNumber: number;

@@ -55,7 +55,9 @@ import { ShortTermPlanView } from './components/ShortTermPlanView';
 import { DailySessionView } from './components/DailySessionView';
 import { HomeworkView } from './components/HomeworkView';
 import { FinalReportView } from './components/FinalReportView';
-import { WeeklyTherapyPlanView } from './components/WeeklyTherapyPlanView';
+import { ProgramCalendar } from './components/ProgramCalendar';
+import { WeeklyStudentReport } from './components/WeeklyStudentReport';
+import { linkShortTraining } from './services/studentTraining';
 import { NewStudentModal } from './components/NewStudentModal';
 import { createNewStudentRecords } from './data/studentFactory';
 import { AuthScreen } from './components/AuthScreen';
@@ -74,6 +76,7 @@ type ActiveTab =
   | 'shortterm'
   | 'sessions'
   | 'homework'
+  | 'semesterPlan'
   | 'weeklySchedule'
   | 'weeklyPlan'
   | 'finalreport';
@@ -146,6 +149,7 @@ function WorkspaceApp({ user }: { user: User | null }) {
   const [syncStatus, setSyncStatus] = useState<'loading' | 'saving' | 'saved' | 'error'>('loading');
 
   // Data states per student
+  const [programEntries,setProgramEntries] = useState<Record<string,string>>(initialWorkspace?.programEntries || {});
   const [caseStudies, setCaseStudies] = useState<Record<string, CaseStudyData>>(() => initialWorkspace?.caseStudies || INITIAL_CASE_STUDIES);
 
   const [assessments, setAssessments] = useState<Record<string, DiagnosticAssessment>>(() => initialWorkspace?.assessments || INITIAL_DIAGNOSTIC_ASSESSMENTS);
@@ -163,12 +167,12 @@ function WorkspaceApp({ user }: { user: User | null }) {
   // Keep a local offline copy as a second layer of protection.
   useEffect(() => {
     try {
-      const state: WorkspaceState = { students, caseStudies, assessments, longTermPlans, shortTermPlans, dailySessions, homeworkList, finalReports };
+      const state: WorkspaceState = { students, caseStudies, assessments, longTermPlans, shortTermPlans, dailySessions, homeworkList, finalReports, programEntries };
       localStorage.setItem(userWorkspaceCacheKey(user!.uid), JSON.stringify(state));
     } catch (error) {
       console.error('تعذر تحديث نسخة التخزين المحلي، تحقق من تنزيل النسخة الاحتياطية.', error);
     }
-  }, [students, caseStudies, assessments, longTermPlans, shortTermPlans, dailySessions, homeworkList, finalReports]);
+  }, [students, caseStudies, assessments, longTermPlans, shortTermPlans, dailySessions, homeworkList, finalReports, programEntries]);
 
   useEffect(() => {
     if (!user) {
@@ -189,6 +193,7 @@ function WorkspaceApp({ user }: { user: User | null }) {
           const mergedStudents = new Map(students.map(student => [student.id, student]));
           cloudState.students.forEach(student => mergedStudents.set(student.id, student));
           setStudents([...mergedStudents.values()]);
+          setProgramEntries(cloudState.programEntries || {});
           setCaseStudies(previous => ({ ...previous, ...cloudState.caseStudies }));
           setAssessments(previous => ({ ...previous, ...cloudState.assessments }));
           setLongTermPlans(previous => ({ ...previous, ...cloudState.longTermPlans }));
@@ -198,7 +203,7 @@ function WorkspaceApp({ user }: { user: User | null }) {
           setFinalReports(previous => ({ ...previous, ...cloudState.finalReports }));
           if (cloudState.students[0]) setActiveStudentId(cloudState.students[0].id);
         } else {
-          const localState: WorkspaceState = { students, caseStudies, assessments, longTermPlans, shortTermPlans, dailySessions, homeworkList, finalReports };
+          const localState: WorkspaceState = { students, caseStudies, assessments, longTermPlans, shortTermPlans, dailySessions, homeworkList, finalReports, programEntries };
           await saveWorkspace(user.uid, localState);
         }
         if (active) {
@@ -220,7 +225,7 @@ function WorkspaceApp({ user }: { user: User | null }) {
     if (!isHydrated || !user) return;
     setSyncStatus('saving');
     const timer = window.setTimeout(() => {
-      const state: WorkspaceState = { students, caseStudies, assessments, longTermPlans, shortTermPlans, dailySessions, homeworkList, finalReports };
+      const state: WorkspaceState = { students, caseStudies, assessments, longTermPlans, shortTermPlans, dailySessions, homeworkList, finalReports, programEntries };
       void saveWorkspace(user.uid, state)
         .then(() => setSyncStatus('saved'))
         .catch(error => {
@@ -229,7 +234,7 @@ function WorkspaceApp({ user }: { user: User | null }) {
         });
     }, 900);
     return () => window.clearTimeout(timer);
-  }, [user?.uid, isHydrated, students, caseStudies, assessments, longTermPlans, shortTermPlans, dailySessions, homeworkList, finalReports]);
+  }, [user?.uid, isHydrated, students, caseStudies, assessments, longTermPlans, shortTermPlans, dailySessions, homeworkList, finalReports, programEntries]);
 
   const currentStudent = students.find(s => s.id === activeStudentId) || students[0];
   const fallbackRecords = useMemo(
@@ -252,7 +257,7 @@ function WorkspaceApp({ user }: { user: User | null }) {
   const currentLTPlan = useMemo(() => linkFluencyPlan(rawLTPlan,currentStudent,currentAssessment),[rawLTPlan,currentStudent,currentAssessment]);
   const savedSTPlan = shortTermPlans[activeStudentId] || fallbackRecords.shortTermPlan;
   const savedSteps = savedSTPlan.communicationObjectiveSteps || [];
-  const currentSTPlan = { ...savedSTPlan, communicationObjectiveSteps: [...savedSteps, ...(fallbackRecords.shortTermPlan.communicationObjectiveSteps || []).filter(step => !savedSteps.some(saved => saved.diagnosis === step.diagnosis))] };
+  const currentSTPlan = linkShortTraining(currentStudent,currentAssessment,currentLTPlan,{ ...savedSTPlan, communicationObjectiveSteps: [...savedSteps, ...(fallbackRecords.shortTermPlan.communicationObjectiveSteps || []).filter(step => !savedSteps.some(saved => saved.diagnosis === step.diagnosis))] });
   const currentSessions = dailySessions[activeStudentId] || fallbackRecords.sessions;
   const currentHwList = homeworkList[activeStudentId] || fallbackRecords.homework;
   const currentFinalReport = finalReports[activeStudentId] || fallbackRecords.finalReport;
@@ -391,7 +396,7 @@ function WorkspaceApp({ user }: { user: User | null }) {
   };
 
   const downloadBackup = () => {
-    const state: WorkspaceState = { students, caseStudies, assessments, longTermPlans, shortTermPlans, dailySessions, homeworkList, finalReports };
+    const state: WorkspaceState = { students, caseStudies, assessments, longTermPlans, shortTermPlans, dailySessions, homeworkList, finalReports, programEntries };
     const blob = new Blob([JSON.stringify({ schemaVersion: 1, exportedAt: new Date().toISOString(), data: state }, null, 2)], { type: 'application/json;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement('a');
@@ -424,7 +429,7 @@ function WorkspaceApp({ user }: { user: User | null }) {
     { id: 'shortterm', label: 'الخطة قصيرة المدى', icon: Target },
     { id: 'sessions', label: 'سجل الجلسات اليومية', icon: Calendar },
     { id: 'homework', label: 'أوراق العمل والواجبات', icon: Home },
-    { id: 'weeklySchedule', label: 'الجدول الأسبوعي (15 جلسة)', icon: Calendar },
+
     { id: 'weeklyPlan', label: 'الخطة الأسبوعية لكل طالب', icon: Target },
     { id: 'finalreport', label: 'التقرير النطقي النهائي', icon: FileCheck }
   ];
@@ -492,6 +497,8 @@ function WorkspaceApp({ user }: { user: User | null }) {
                 <span>تسجيل طالب جديد</span>
               </button>
 
+              <button className="rounded-xl bg-sky-700 px-3 py-2 text-xs font-bold text-white" onClick={()=>setActiveTab('weeklySchedule')}>الجدول الأسبوعي العام</button>
+              <button className="rounded-xl bg-sky-700 px-3 py-2 text-xs font-bold text-white" onClick={()=>setActiveTab('semesterPlan')}>الخطط الأسبوعية العامة</button>
               {/* Master Word Export Menu */}
               <div className="relative">
                 <button
@@ -652,7 +659,7 @@ function WorkspaceApp({ user }: { user: User | null }) {
                       </details>
                     )}
                     {user && <AccountPasswordSetup user={user} />}
-                    {user && <button onClick={async () => { if (!auth || !isHydrated) return; setSyncStatus('saving'); try { await saveWorkspace(user.uid, { students, caseStudies, assessments, longTermPlans, shortTermPlans, dailySessions, homeworkList, finalReports }); if (db) await waitForPendingWrites(db); await signOut(auth); } catch { setSyncStatus('error'); window.alert('لم يكتمل حفظ آخر التعديلات. لم نسجل خروجك لحماية بياناتك؛ تحقق من الاتصال وأعد المحاولة.'); } }} className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-xs font-black text-red-700 hover:bg-red-50"><LogOut className="h-4 w-4" /><span>تسجيل الخروج</span></button>}
+                    {user && <button onClick={async () => { if (!auth || !isHydrated) return; setSyncStatus('saving'); try { await saveWorkspace(user.uid, { students, caseStudies, assessments, longTermPlans, shortTermPlans, dailySessions, homeworkList, finalReports, programEntries }); if (db) await waitForPendingWrites(db); await signOut(auth); } catch { setSyncStatus('error'); window.alert('لم يكتمل حفظ آخر التعديلات. لم نسجل خروجك لحماية بياناتك؛ تحقق من الاتصال وأعد المحاولة.'); } }} className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-xs font-black text-red-700 hover:bg-red-50"><LogOut className="h-4 w-4" /><span>تسجيل الخروج</span></button>}
                   </div>
                 )}
               </div>
@@ -691,7 +698,7 @@ function WorkspaceApp({ user }: { user: User | null }) {
 
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-2 sm:px-6 py-4 sm:py-8 overflow-x-hidden">
-        {currentStudent?.deletedAt && activeTab !== 'letters' ? <p className="rounded-xl bg-white p-6">الطالب في المحذوفين. استرجعه من القائمة أعلاه أو سجل طالباً جديداً لعرض النماذج.</p> : <>
+        {activeTab === 'weeklySchedule' || activeTab === 'semesterPlan' ? <ProgramCalendar mode={activeTab === 'weeklySchedule' ? 'schedule' : 'semester'} students={students} entries={programEntries} save={(key,value)=>setProgramEntries(prev=>({...prev,[key]:value}))}/> : currentStudent?.deletedAt && activeTab !== 'letters' ? <p className="rounded-xl bg-white p-6">الطالب في المحذوفين. استرجعه من القائمة أعلاه أو سجل طالباً جديداً لعرض النماذج.</p> : <>
         {activeTab === 'letters' && <LettersDirectory />}
 
         {activeTab === 'casestudy' && (
@@ -753,6 +760,7 @@ function WorkspaceApp({ user }: { user: User | null }) {
           <ShortTermPlanView key={activeStudentId}
             student={currentStudent}
             plan={linkedCurrentSTPlan}
+            onChangeTargets={letters=>saveStudentProfile(currentStudent,letters)}
             onUpdatePlan={updated =>
               setShortTermPlans(prev => ({ ...prev, [activeStudentId]: updated }))
             }
@@ -767,6 +775,7 @@ function WorkspaceApp({ user }: { user: User | null }) {
             student={currentStudent}
             sessions={currentSessions}
             shortTermPlan={linkedCurrentSTPlan}
+            longPlan={linkedCurrentLTPlan}
             onUpdateShortTermPlan={updated => setShortTermPlans(prev => ({ ...prev, [activeStudentId]: updated }))}
             onUpdateSession={updated => setDailySessions(prev => ({ ...prev, [activeStudentId]: (prev[activeStudentId] || []).map(session => session.id === updated.id ? updated : session) }))}
             onDeleteSession={id => setDailySessions(prev => ({ ...prev, [activeStudentId]: (prev[activeStudentId] || []).filter(session => session.id !== id) }))}
@@ -789,20 +798,9 @@ function WorkspaceApp({ user }: { user: User | null }) {
           />
         )}
 
-        {(activeTab === 'weeklySchedule' || activeTab === 'weeklyPlan') && (
-          <WeeklyTherapyPlanView
-            shortPlan={linkedCurrentSTPlan}
-            longPlan={linkedCurrentLTPlan}
-            key={activeStudentId}
-            mode={activeTab === 'weeklySchedule' ? 'schedule' : 'plan'}
-            student={currentStudent}
-            onUpdateStudent={updated => {
-              setStudents(previous => previous.map(student => student.id === updated.id ? updated : student));
-              setCaseStudies(previous => previous[updated.id] ? { ...previous, [updated.id]: { ...previous[updated.id], student: updated } } : previous);
-            }}
-          />
-        )}
-
+        {activeTab === 'weeklyPlan' && <WeeklyStudentReport key={activeStudentId} student={currentStudent} short={linkedCurrentSTPlan} long={linkedCurrentLTPlan}
+          saveStudent={updated=>setStudents(prev=>prev.map(s=>s.id===updated.id ? updated : s))}
+          savePlan={updated=>setShortTermPlans(prev=>({...prev,[activeStudentId]:updated}))}/>}
         {activeTab === 'finalreport' && (
           <FinalReportView
             student={currentStudent}

@@ -418,7 +418,6 @@ export const CaseStudyView: React.FC<CaseStudyViewProps> = ({
                     <span className="text-slate-600 font-medium"><EditableText label="الحالة الإكلينيكية" value={exam.breathing.capacity} multiline={false} suggestions={["كافٍ لإخراج الجمل","نفس قصير وسطحي"]} onSave={value => { const updated = { ...data, oralMotorExam: { ...exam, breathing: { ...exam.breathing, capacity: value } } } as CaseStudyData; setData(updated); onUpdateCaseStudy(updated); }} onDelete={() => { const updated = { ...data, oralMotorExam: { ...exam, breathing: { ...exam.breathing, capacity: '' } } } as CaseStudyData; setData(updated); onUpdateCaseStudy(updated); }} /></span>
                   </td>
                   <td className="p-3 border border-slate-200">
-                    <EditableText label="ملاحظات التنفس" value={exam.breathing.notes} onSave={value => saveExamNote('breathing', value)} onDelete={() => saveExamNote('breathing', '')} suggestions={noteChoices.breathing} rows={3} />
                   </td>
                 </tr>
               </tbody>

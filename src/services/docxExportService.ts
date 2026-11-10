@@ -1,3 +1,4 @@
+import {familyPractice} from './studentTraining';
 import { stutteringStages } from '../data/stutteringStages';
 import { homeworkColumns, homeworkPositions } from './homeworkGrid';
 import { parentTrainingGuide, shouldUpgradeParentTrainingGuide } from './parentTrainingGuide';
@@ -339,7 +340,7 @@ export async function exportCaseStudyDocx(caseStudy: CaseStudyData) {
               children: [
                 createStyledCell('التنفس الصوتي', 25, false, true),
                 createStyledCell(`${exam.breathing.type} | ${exam.breathing.capacity}`, 25),
-                createStyledCell(exam.breathing.notes || 'تنفس أنفي منتظم وسعة كافية.', 50)
+                createStyledCell('', 50)
               ]
             })
           ]),
@@ -718,8 +719,7 @@ export async function exportPlansDocx(
         return [
           new Paragraph({ alignment: AlignmentType.RIGHT, bidirectional: true, spacing: { before: 70, after: 40 }, children: [new TextRun({ text: guide.label, font: 'Cairo', bold: true, color: PRIMARY_COLOR, rightToLeft: true })] }),
           new Paragraph({ alignment: AlignmentType.RIGHT, bidirectional: true, spacing: { after: 60 }, children: [new TextRun({ text: shortTermPlan.communicationObjectives?.[diagnosis] || guide.shortTermGoal, font: 'Cairo', rightToLeft: true })] }),
-          ...guide.methods.map(method => new Paragraph({ alignment: AlignmentType.RIGHT, bidirectional: true, spacing: { after: 40 }, children: [new TextRun({ text: '• ' + method, font: 'Cairo', rightToLeft: true })] })),
-          new Paragraph({ alignment: AlignmentType.RIGHT, bidirectional: true, spacing: { after: 100 }, children: [new TextRun({ text: 'تنسيق التنفس والكلام: ' + guide.breathing, font: 'Cairo', rightToLeft: true })] })
+          ...(shortTermPlan.communicationObjectiveSteps || []).filter(step=>step.diagnosis===diagnosis).map(step=>new Paragraph({alignment:AlignmentType.RIGHT,bidirectional:true,children:[new TextRun({text:step.stepNumber+' · '+step.objectiveText+' · '+(step.status==='achieved'?'منجز':'تحت التدريب'),font:'Cairo',rightToLeft:true})]})),
         ];
       })
     ] : []),
@@ -919,7 +919,7 @@ export async function exportHomeworkDocx(student: StudentProfile, homework: Home
   const track = homework.practiceType ?? (student.targetLetters?.length ? 'letters' : student.communicationDiagnoses?.[0] || 'letters');
   if (track !== 'letters') {
     const guide = COMMUNICATION_THERAPY_GUIDES[track];
-    const paragraphs = [homework.dateGiven, homework.communicationHomePractice?.[track] ?? guide.homePractice, guide.methods[0], guide.breathing, homework.parentNotes, homework.specialistFeedback, student.guardianName].filter(Boolean).map(text => new Paragraph({ alignment: AlignmentType.RIGHT, bidirectional: true, children: [new TextRun({ text, font: 'Cairo', rightToLeft: true })] }));
+    const paragraphs = [homework.dateGiven, homework.communicationHomePractice?.[track] ?? familyPractice[track], homework.parentNotes, homework.specialistFeedback, student.guardianName].filter(Boolean).map(text => new Paragraph({ alignment: AlignmentType.RIGHT, bidirectional: true, children: [new TextRun({ text, font: 'Cairo', rightToLeft: true })] }));
     const header = await createOfficialHeaderParagraphs('واجب منزلي · ' + guide.label, student.fullName);
     const doc = new Document({ sections: [{ children: [...header, ...paragraphs] }] });
     saveAs(await Packer.toBlob(doc), 'واجب_' + guide.label + '_' + student.fullName + '.docx');

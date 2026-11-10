@@ -1,3 +1,4 @@
+import { stutteringStages } from '../data/stutteringStages';
 import React, { useEffect, useState } from 'react';
 import {
   FileDown,
@@ -30,6 +31,7 @@ interface DailySessionViewProps {
   onAddSession: (session: DailySessionLog) => void;
   onUpdateSession: (session: DailySessionLog) => void;
   onDeleteSession: (id: string) => void;
+  longPlan?: import('../types/speechTherapy').LongTermPlan;
   shortTermPlan: ShortTermPlan;
   onUpdateShortTermPlan: (updated: ShortTermPlan) => void;
 }
@@ -37,7 +39,7 @@ interface DailySessionViewProps {
 export const DailySessionView: React.FC<DailySessionViewProps> = ({
   student,
   sessions,
-  onAddSession, onUpdateSession, onDeleteSession, shortTermPlan, onUpdateShortTermPlan
+  onAddSession, onUpdateSession, onDeleteSession, shortTermPlan, longPlan, onUpdateShortTermPlan
 }) => {
   const [showAddForm, setShowAddForm] = useState(false);
   const [targetLetter, setTargetLetter] = useState(student.targetLetters?.[0] || sessions[0]?.targetLetter || 'ر');
@@ -51,6 +53,9 @@ export const DailySessionView: React.FC<DailySessionViewProps> = ({
   const activeLetterGoal = trainingType === 'letters' ? shortTermPlan.objectives.filter(goal => goal.targetLetter === targetLetter && goal.status !== 'achieved').sort((a,b) => a.stepNumber-b.stepNumber)[0] : undefined;
   const activeCommunicationGoal = selectedDiagnosis ? (shortTermPlan.communicationObjectiveSteps || []).filter(goal => goal.diagnosis === selectedDiagnosis && goal.status !== 'achieved').sort((a,b) => a.stepNumber-b.stepNumber)[0] : undefined;
   const activeGoal = activeLetterGoal || activeCommunicationGoal;
+  const stage = trainingType==='stuttering' && activeGoal ? (longPlan?.stutteringStages || stutteringStages)[activeGoal.stepNumber-1] : undefined;
+  const longGoal = selectedDiagnosis ? longPlan?.communicationGoals?.[selectedDiagnosis] : longPlan?.goals.find(g=>g.targetLetter===targetLetter)?.goalDescription;
+  const activities = stage?.activities || (trainingType==='stuttering' ? ['اطلب من الطالب اختيار موقف مشاركة. دوّن ما قاله ودرجة المساعدة، ثم امدح مبادرته وحدد معه تجربة جديدة.'] : selectedGuide?.methods || [`اعرض كلمة فيها حرف (${targetLetter}) في مستوى الهدف. انطق نموذجًا، ثم أعط الطالب فرصة مستقلة وسجّل نوع المساعدة.`]);
   const goalId = activeGoal?.id;
   const goalType = activeLetterGoal ? 'letter' as const : activeCommunicationGoal ? 'communication' as const : undefined;
   const edit = (session: DailySessionLog, field: keyof DailySessionLog, label: string) => <EditableText targetLetter={session.targetLetter} label={label} value={String(session[field] ?? '')} onSave={value => onUpdateSession({ ...session, [field]: value })} onDelete={() => onUpdateSession({ ...session, [field]: '' })} className="w-full text-slate-700" />;
@@ -58,7 +63,6 @@ export const DailySessionView: React.FC<DailySessionViewProps> = ({
   const [newObjective, setNewObjective] = useState('');
   const [newAccuracy, setNewAccuracy] = useState(85);
   const [newStudentResponse, setNewStudentResponse] = useState<any>('ممتاز ومتحمس');
-  const [newHomework, setNewHomework] = useState('');
   const [newNotes, setNewNotes] = useState('');
   const [selectedClinicalExercises, setSelectedClinicalExercises] = useState<string[]>([]);
   const hasCommunicationDiagnosis = !!selectedGuide;
@@ -84,12 +88,11 @@ export const DailySessionView: React.FC<DailySessionViewProps> = ({
       },
       mirrorProcedure: trainingType !== 'letters' ? 'لم تستخدم المرآة؛ ركزت الجلسة على مسار التواصل المحدد.' : 'استخدمت المرآة للملاحظة البصرية عند ملاءمتها لنتيجة التقييم.',
       depressorProcedure: 'لم يستخدم خافض اللسان في هذه الجلسة.',
-      exercisesPerformed: hasCommunicationDiagnosis
-        ? (selectedClinicalExercises.length ? selectedClinicalExercises : [selectedGuide!.methods[0]])
-        : ['تدريب الحرف المستهدف في المستوى الحالي بالخطة.', 'تطبيق نموذج ثم إتاحة محاولة مستقلة وتسجيل الأداء.'],
+      exercisesPerformed: selectedClinicalExercises,
+      longTermObjective: longGoal || '',
       studentResponse: newStudentResponse,
       accuracyRate: newAccuracy,
-      homeworkAssigned: newHomework.trim() || (selectedGuide ? selectedGuide.homePractice : `التدريب على حرف (${targetLetter}) في الكلمات والجمل المحددة بالخطة.`),
+      homeworkAssigned: '',
       specialistNotes: newNotes,
       specialistName: SCHOOL_KLICHE.specialistName
     };
@@ -116,14 +119,14 @@ export const DailySessionView: React.FC<DailySessionViewProps> = ({
             سجل الجلسات التدريبية اليومية (Daily Session Protocol)
           </h2>
           <p className="text-xs text-slate-500">
-            توثيق إجراءات الأدوات (1- المرآة، 2- خافض اللسان) ونسب الدقة والواجب المنزلي
+            توثيق إجراءات الأدوات (1- المرآة، 2- خافض اللسان) والأنشطة المنفذة ومستوى المساندة
           </p>
         </div>
 
 
         <div className="flex items-center gap-2">
           {trainingType === 'letters' && <label className="flex items-center gap-2 text-xs font-bold text-slate-700">حرف التدريب:
-            <select value={targetLetter} onChange={e => setTargetLetter(e.target.value as typeof targetLetter)} className="rounded-lg border border-slate-200 bg-white p-2">{(student.targetLetters || []).map(letter => <option key={letter}>{letter}</option>)}</select>
+            <select value={targetLetter} onChange={e => {setTargetLetter(e.target.value as typeof targetLetter);setSelectedClinicalExercises([]);setNewObjective('');setCompleteCurrentGoal(false);}} className="rounded-lg border border-slate-200 bg-white p-2">{(student.targetLetters || []).map(letter => <option key={letter}>{letter}</option>)}</select>
           </label>}
           <button
             onClick={() => setShowAddForm(!showAddForm)}
@@ -152,21 +155,21 @@ export const DailySessionView: React.FC<DailySessionViewProps> = ({
           </h3>
           <div className="rounded-2xl border border-sky-200 bg-sky-50 p-4">
             <label className="block text-sm font-bold text-sky-950">مسار الجلسة (اختر مسارًا واحدًا)
-              <select value={trainingType || 'letters'} onChange={event => { setTrainingType(event.target.value as DailySessionLog['trainingType']); setSelectedClinicalExercises([]); setCompleteCurrentGoal(false); }} className="mt-1 w-full rounded-lg border border-slate-200 bg-white p-2">
+              <select value={trainingType || 'letters'} onChange={event => { setTrainingType(event.target.value as DailySessionLog['trainingType']); setNewObjective(''); setSelectedClinicalExercises([]); setCompleteCurrentGoal(false); }} className="mt-1 w-full rounded-lg border border-slate-200 bg-white p-2">
                 {availableTracks.map(track => <option key={track} value={track}>{track === 'letters' ? 'تدريب الحروف' : COMMUNICATION_THERAPY_GUIDES[track].label}</option>)}
               </select>
             </label>
             {selectedGuide && <article className="mt-3 rounded-xl border border-white bg-white p-4">
               <h5 className="font-bold">{selectedGuide.label}</h5>
-              <ul className="mt-2 list-disc space-y-2 pr-5 text-xs leading-6">{selectedGuide.methods.map(method => <li key={method}>
+              <ul className="mt-2 list-disc space-y-2 pr-5 text-xs leading-6">{activities.map(method => <li key={method}>
                 <span>{method}</span>
-                <button type="button" onClick={() => setSelectedClinicalExercises(previous => previous.includes(method) ? previous : [...previous, method])} className="mr-2 rounded-lg bg-sky-100 px-2 py-1 font-bold text-sky-900 print:hidden">
+                <button type="button" onClick={() => setSelectedClinicalExercises(previous => previous.includes(method) ? previous.filter(item=>item!==method) : [...previous, method])} className="mr-2 rounded-lg bg-sky-100 px-2 py-1 font-bold text-sky-900 print:hidden">
                   {selectedClinicalExercises.includes(method) ? 'أضيف للجلسة' : 'إضافة إلى الجلسة'}
                 </button>
               </li>)}</ul>
-              <p className="mt-3 rounded-lg bg-amber-50 p-3 text-xs leading-6"><strong>تنسيق التنفس:</strong> {selectedGuide.breathing}</p>
             </article>}
-            {trainingType === 'letters' && <p className="mt-3 text-xs leading-6 text-slate-700">تُختار تدريبات الحروف من الهدف النشط في الخطة قصيرة المدى.</p>}
+            <p className="mt-3 text-sm">الهدف طويل المدى: {longGoal || 'لم يحدد بعد'}</p>
+            {!selectedGuide && activities.map(method=><label key={method} className="block"><input type="checkbox" checked={selectedClinicalExercises.includes(method)} onChange={e=>setSelectedClinicalExercises(e.target.checked ? [...selectedClinicalExercises,method] : selectedClinicalExercises.filter(v=>v!==method))}/> {method}</label>)}
             <p className="mt-2 text-xs leading-6 text-slate-600">ستُسجل الأنشطة المختارة في تقرير هذا المسار فقط، دون دمج تدريب الحروف والتأتأة أو الحبسة.</p>
           </div>
 
@@ -190,7 +193,7 @@ export const DailySessionView: React.FC<DailySessionViewProps> = ({
             </div>
             {trainingType === 'letters' && <div>
                             <label className="font-bold text-slate-700 block mb-1">حرف التدريب:</label>
-                            <select value={targetLetter} onChange={e => setTargetLetter(e.target.value as typeof targetLetter)} className="w-full rounded-lg border border-slate-200 bg-white p-2">{(student.targetLetters || []).map(letter => <option key={letter}>{letter}</option>)}</select>
+                            <select value={targetLetter} onChange={e => {setTargetLetter(e.target.value as typeof targetLetter);setSelectedClinicalExercises([]);setNewObjective('');setCompleteCurrentGoal(false);}} className="w-full rounded-lg border border-slate-200 bg-white p-2">{(student.targetLetters || []).map(letter => <option key={letter}>{letter}</option>)}</select>
                           </div>}
             <div>
               <label className="font-bold text-slate-700 block mb-1">نسبة الإتقان المحققة (%):</label>
@@ -217,14 +220,6 @@ export const DailySessionView: React.FC<DailySessionViewProps> = ({
               </select>
             </div>
             {activeGoal && <label className="flex items-center gap-2 rounded-lg bg-emerald-50 p-3 text-xs font-bold text-emerald-950 md:col-span-3"><input type="checkbox" checked={completeCurrentGoal} onChange={event => setCompleteCurrentGoal(event.target.checked)} />سجّل هذا الهدف منجزًا بعد التحقق من معيار النجاح؛ ستنتقل الجلسة التالية تلقائيًا إلى الهدف التالي.</label>}
-            <div className="md:col-span-2">
-              <label className="font-bold text-slate-700 block mb-1">الواجب المنزلي المرتبط بهذا المسار:</label>
-              <SavedField aria-label="الواجب المنزلي" targetLetter={targetLetter}
-                value={newHomework}
-                onChange={e => setNewHomework(e.target.value)}
-                className="w-full bg-white border border-slate-200 rounded-lg p-2"
-              />
-            </div>
             <div className="md:col-span-3">
               <label className="font-bold text-slate-700 block mb-1">ملاحظات الجلسة:</label>
               <SavedField multiline aria-label="ملاحظات الجلسة"
@@ -326,6 +321,7 @@ export const DailySessionView: React.FC<DailySessionViewProps> = ({
                   التمارين والأنشطة المنفذة:
                 </span>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                  {s.longTermObjective && <p className="mb-2">الهدف طويل المدى: {s.longTermObjective}</p>}
                   {s.exercisesPerformed.map((ex, i) => (
                     <div key={i} className="flex items-center gap-1.5 text-slate-600 bg-slate-50 p-2 rounded-lg border border-slate-100">
                       <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
@@ -338,13 +334,6 @@ export const DailySessionView: React.FC<DailySessionViewProps> = ({
 
               {/* Homework and Therapist notes */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs pt-1">
-                <div className="bg-emerald-50/60 p-2.5 rounded-lg border border-emerald-100">
-                  <span className="font-bold text-emerald-950 block mb-0.5">
-                    الواجب المنزلي المسند:
-                  </span>
-                  {edit(s, 'homeworkAssigned', 'الواجب المنزلي')}
-                  <ChoicePicker category={`session-homework-${s.targetLetter}`} label="الواجبات" suggestions={s.trainingType && s.trainingType !== 'letters' ? [COMMUNICATION_THERAPY_GUIDES[s.trainingType].homePractice] : homeworkSuggestions(s.targetLetter)} onSelect={homeworkAssigned => onUpdateSession({ ...s, homeworkAssigned })} />
-                </div>
                 <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200">
                   <span className="font-bold text-slate-800 block mb-0.5">
                     الملاحظات:

@@ -1,3 +1,4 @@
+import { familyPractice } from '../services/studentTraining';
 import { homeworkColumns, homeworkPositions } from '../services/homeworkGrid';
 import React, { useEffect, useState } from 'react';
 import {
@@ -71,7 +72,7 @@ export const HomeworkView: React.FC<HomeworkViewProps> = ({
   }, [student.id, student.targetLetters, homeworkList, activeHw.id]);
   useEffect(() => {
     if (activePracticeType !== 'letters' || !shouldUpgradeParentTrainingGuide(activeHw.mirrorInstructionAtHome)) return;
-    const mirrorInstructionAtHome = parentTrainingGuide(activeHw.targetLetter);
+    const mirrorInstructionAtHome = parentTrainingGuideForGuidance(activeHw.targetLetter, activeHw.letterInstructionsForParent);
     const updated = { ...activeHw, mirrorInstructionAtHome };
     setActiveHw(updated);
     onUpdateHomework(updated);
@@ -87,7 +88,7 @@ export const HomeworkView: React.FC<HomeworkViewProps> = ({
     if (existing) { setActiveHw(existing); return; }
     const guide = track !== 'letters' ? COMMUNICATION_THERAPY_GUIDES[track] : undefined;
     const info = ARABIC_LETTERS_MAP[letter];
-    updateHomework({ id: 'hw-' + student.id + '-' + (track === 'letters' ? letter : track), practiceType: track, targetLetter: letter, parentNotes: '', specialistFeedback: '', dateGiven: getLiveHijriDate(), returnDate: getLiveHijriDate(), letterInstructionsForParent: guide ? '' : parentGuidanceSuggestions(letter)[0], mirrorInstructionAtHome: guide ? '' : parentTrainingGuide(letter), wordsToPractice: guide ? [] : homeworkPositions.flatMap((position,index) => info.examples[(['beginning','middle','end'] as const)[index]].words.map(item => ({ position, word: item.word, repetitionCount: 5 }))), sentenceToRepeat: guide ? '' : info.practiceSentences[0], communicationHomePractice: guide ? { [track]: guide.homePractice } : {} });
+    updateHomework({ id: 'hw-' + student.id + '-' + (track === 'letters' ? letter : track), practiceType: track, targetLetter: letter, parentNotes: '', specialistFeedback: '', dateGiven: getLiveHijriDate(), returnDate: getLiveHijriDate(), letterInstructionsForParent: guide ? '' : parentGuidanceSuggestions(letter)[0], mirrorInstructionAtHome: guide ? '' : parentTrainingGuide(letter), wordsToPractice: guide ? [] : homeworkPositions.flatMap((position,index) => info.examples[(['beginning','middle','end'] as const)[index]].words.map(item => ({ position, word: item.word, repetitionCount: 5 }))), sentenceToRepeat: guide ? '' : info.practiceSentences[0], communicationHomePractice: track !== 'letters' ? { [track]: familyPractice[track] } : {} });
   };
   const changeTargetLetter = (targetLetter: HomeworkSheet['targetLetter']) => {
     const existing = homeworkList.find(item => (!item.practiceType || item.practiceType === 'letters') && item.targetLetter === targetLetter);
@@ -194,10 +195,7 @@ export const HomeworkView: React.FC<HomeworkViewProps> = ({
 
         {activePracticeType !== 'letters' && <section className="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50/60 p-5">
           <h3 className="font-black text-emerald-950">واجب منزلي مناسب لمسار {COMMUNICATION_THERAPY_GUIDES[activePracticeType].label}</h3>
-          <p className="mt-2 text-xs leading-6 text-slate-600">يظهر هنا واجب المسار المحدد فقط. عدّل النص ليلائم نتيجة التقييم، اهتمامات الطالب، ودرجة المساندة.</p>
-          <SavedField multiline rows={5} aria-label="واجب منزلي لهذا المسار" value={activeHw.communicationHomePractice?.[activePracticeType] ?? COMMUNICATION_THERAPY_GUIDES[activePracticeType].homePractice} onChange={event => updateHomework({ practiceType: activePracticeType, communicationHomePractice: { ...activeHw.communicationHomePractice, [activePracticeType]: event.target.value } })} className="mt-3 w-full rounded-xl border border-slate-200 bg-white p-3 leading-7" />
-          <p className="mt-3 rounded-lg bg-white p-3 text-xs leading-6"><strong>إرشاد تدريب الأخصائي:</strong> {COMMUNICATION_THERAPY_GUIDES[activePracticeType].methods[0]}</p>
-          <p className="mt-2 rounded-lg bg-amber-50 p-3 text-xs leading-6"><strong>ملاحظة التنفس:</strong> {COMMUNICATION_THERAPY_GUIDES[activePracticeType].breathing}</p>
+          <SavedField multiline rows={5} aria-label="واجب منزلي لهذا المسار" value={activeHw.communicationHomePractice?.[activePracticeType] ?? familyPractice[activePracticeType]} onChange={event => updateHomework({ practiceType: activePracticeType, communicationHomePractice: { ...activeHw.communicationHomePractice, [activePracticeType]: event.target.value } })} className="mt-3 w-full rounded-xl border border-slate-200 bg-white p-3 leading-7" />
         </section>}
 
 

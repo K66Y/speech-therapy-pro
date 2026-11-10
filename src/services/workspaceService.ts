@@ -3,6 +3,7 @@ import { db } from './firebase';
 import type { CaseStudyData, DailySessionLog, DiagnosticAssessment, FinalProgressReport, HomeworkSheet, LongTermPlan, ShortTermPlan, StudentProfile } from '../types/speechTherapy';
 
 export interface WorkspaceState {
+  programEntries?: Record<string,string>;
   students: StudentProfile[];
   caseStudies: Record<string, CaseStudyData>;
   assessments: Record<string, DiagnosticAssessment>;
@@ -34,6 +35,7 @@ export async function loadWorkspace(uid: string): Promise<WorkspaceState | null>
   const legacyRoot = await getDoc(doc(db!, 'userWorkspaces', uid));
   if (snapshot.empty && !legacyRoot.exists()) return null;
   const state: WorkspaceState = { students: [], caseStudies: {}, assessments: {}, longTermPlans: {}, shortTermPlans: {}, dailySessions: {}, homeworkList: {}, finalReports: {} };
+  state.programEntries = legacyRoot.data()?.programEntries || {};
   snapshot.forEach(item => {
     const bundle = item.data() as StudentBundle;
     if (!bundle.profile) return;
@@ -77,7 +79,7 @@ async function persistWorkspace(uid: string, state: WorkspaceState): Promise<voi
     };
     await setDoc(doc(collectionRef, id), bundle, { merge: true });
   }));
-  await setDoc(doc(db, 'userWorkspaces', uid), { ownerId: uid, schemaVersion: 1, updatedAt: serverTimestamp() }, { merge: true });
+  await setDoc(doc(db, 'userWorkspaces', uid), { ownerId: uid, programEntries:state.programEntries || {}, schemaVersion: 1, updatedAt: serverTimestamp() }, { merge: true });
 }
 
 export async function recordLogin(uid: string, email: string | null): Promise<void> {
