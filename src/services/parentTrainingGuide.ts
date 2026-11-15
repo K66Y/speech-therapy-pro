@@ -9,7 +9,6 @@ const LEGACY_GENERIC_GUIDES = [
 
 /** إرشاد منزلي قابل للطباعة ومخصص للحرف، دون توجيه ولي الأمر لاستخدام أدوات داخل الفم. */
 export function parentTrainingGuide(letter: ArabicLetterKey): string {
-  const info = ARABIC_LETTERS_MAP[letter];
   return parentTrainingGuideForGuidance(letter,'أمثلة');
 }
 
@@ -18,6 +17,8 @@ export function parentTrainingGuideForGuidance(letter: ArabicLetterKey, guidance
   const position = /وسط/.test(guidance) ? 'middle' : /آخر/.test(guidance) ? 'end' : 'beginning';
   const word = info.examples[position].words[0].word;
   const action = /مرآة/.test(guidance) ? 'اجلس بجانبه أمام المرآة. قل ('+info.shortVowels.fatha+') مرة واحدة ودعه يشاهد فمك ويجرب.' :
+    /وقت التدريب قصير/.test(guidance) ? 'اختر وقتاً هادئاً وكلمة واحدة مثل «'+word+'». تبادلا قولها مرة، ثم خذوا استراحة قصيرة.' :
+    /عند صعوبة الأداء/.test(guidance) ? 'قل «'+word+'» ببطء مرة واحدة. إذا صعبت على طفلك فقلها معه وسجّل للمعلم أين احتاج مساعدتك.' :
     /حركات|الحركات/.test(guidance) ? 'قل ('+info.shortVowels.fatha+')، وانتظر حتى يجرب طفلك. ثم قل ('+info.shortVowels.damma+') وامنحه دوره.' :
     /حديث|التعميم|جملة/.test(guidance) ? 'اسأله سؤالًا قصيرًا يمكن أن يجيب عنه بكلمة «'+word+'». انتظر حتى ينهي فكرته.' :
     'اختر كلمة من الورقة مثل «'+word+'». قلها بوضوح مرة واحدة، ثم أعط طفلك دوره ليقولها.';

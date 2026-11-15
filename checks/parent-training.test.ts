@@ -5,11 +5,9 @@ import { parentTrainingGuide, parentTrainingGuideForGuidance, shouldUpgradeParen
 test('parent home-training guidance is complete and specific to each target letter', () => {
   const raa = parentTrainingGuide('ر');
   const baa = parentTrainingGuide('ب');
-  assert.match(raa, /حرف \(ر\)/);
-  assert.match(raa, /معرفة المخرج/);
-  assert.match(raa, /الحركات القصيرة/);
-  assert.match(raa, /أول الكلمة/);
-  assert.match(raa, /التغذية الراجعة/);
+  assert.match(raa, /رُمَّان/);
+  assert.match(raa, /أعط طفلك دوره/);
+  assert.match(raa, /امدح محاولته/);
   assert.notEqual(raa, baa);
 });
 
@@ -19,12 +17,14 @@ test('each parent guidance choice generates a matching training method', () => {
   const beginning = parentTrainingGuideForGuidance('ر', 'التدريب على الحرف في أول الكلمة باستخدام البطاقات.');
   const generalization = parentTrainingGuideForGuidance('ر', 'شجع الطالب على استخدام الحرف في حديث يومي قصير.');
   const shortSession = parentTrainingGuideForGuidance('ر', 'اجعل وقت التدريب قصيراً وهادئاً، وقدم نموذجاً واضحاً.');
-  assert.match(mirror, /تدريب المرآة/);
-  assert.match(vowels, /تدريب الحركات/);
-  assert.match(beginning, /أول الكلمة/);
-  assert.match(generalization, /الحديث اليومي/);
-  assert.match(shortSession, /جلسة منزلية قصيرة/);
-  assert.equal(new Set([mirror, vowels, beginning, generalization, shortSession]).size, 5);
+  assert.match(mirror, /أمام المرآة/);
+  assert.match(vowels, /رَ.*رُ/);
+  assert.match(beginning, /رُمَّان/);
+  assert.match(generalization, /اسأله سؤالًا/);
+  assert.match(shortSession, /استراحة قصيرة/);
+  const support = parentTrainingGuideForGuidance('ر', 'عند صعوبة الأداء، اكتف بالمستوى المحدد في الورقة ودوّن الملاحظة ليتابعها المعلم.');
+  assert.match(support, /سجّل للمعلم/);
+  assert.equal(new Set([support, mirror, vowels, beginning, generalization, shortSession]).size, 6);
 });
 
 test('legacy generic parent guidance is upgraded without replacing a detailed custom guide', () => {
